@@ -7,7 +7,7 @@ PORT = 6667
 USE_SSL = False
 
 # Details for logging in with the user you want to use for the bot
-# More information on how to get the OAuth token
+# More information on how to get the OAuth token in README.md
 USER = "your_user_name"
 OAUTH_TOKEN = "oauth:*************"
 
