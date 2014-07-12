@@ -2,8 +2,6 @@ import sqlite3
 from random import randint
 from irc.bot import SingleServerIRCBot
 
-import settings
-
 
 class Bot(object):
     """The core bot logic"""
