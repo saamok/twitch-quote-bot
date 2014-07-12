@@ -30,7 +30,7 @@ Setup
     pip install -r requirements.txt
     # You might have to prepend sudo if not using virtualenv
  1. Copy settings.example.py to settings.py, and edit to needs
- 1. Run the bot: ```python bot.py```
+ 1. Run the bot: ```python -m bot```
 
 
 Getting an OAuth token for Twitch chat IRC access

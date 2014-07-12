@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-import logging
 import sqlite3
 from random import randint
 from irc.bot import SingleServerIRCBot
@@ -8,57 +5,17 @@ from irc.bot import SingleServerIRCBot
 import settings
 
 
-def _get_formatter():
-    """Return a nice common log formatter"""
-
-    return logging.Formatter('%(asctime)s [%(levelname)8s] %(message)s')
-
-
-def _get_log():
-    """Set up a basic logger"""
-
-    logger = logging.getLogger('TwitchBot')
-    logger.setLevel(logging.CRITICAL)
-
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-
-    ch.setFormatter(_get_formatter())
-
-    logger.addHandler(ch)
-    logger.setLevel(logging.DEBUG)
-
-    return logger
-
-
-log = _get_log()
-
-
-def set_log_file(log_file):
-    """Configure the logger above to log to a file"""
-
-    fh = logging.FileHandler(log_file)
-
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(_get_formatter())
-
-    log.addHandler(fh)
-
-
 class Bot(object):
     """The core bot logic"""
 
-    def __init__(self, settings, wrapper_class, logger=log):
+    def __init__(self, settings, wrapper_class, logger):
         self.settings = settings
-
-        if settings.LOG_FILE:
-            set_log_file(settings.LOG_FILE)
 
         self.logger = logger
 
         self.ircWrapper = wrapper_class(
-            self,
             logger,
+            self,
             settings.CHANNEL_LIST,
             settings.USER,
             settings.HOST,
@@ -99,14 +56,14 @@ class Bot(object):
 
             if command == "addquote":
                 self._add_quote(nick, channel, args)
-            if command == "delquote":
+            elif command == "delquote":
                 self._del_quote(nick, channel, args)
-            if command == "quote":
+            elif command == "quote":
                 self._show_quote(nick, channel, args)
-            if command == "reg":
+            elif command == "reg":
                 self._manage_regulars(nick, channel, args)
 
-        except BaseException as e:
+        except:
             message = "{0}, whoah, something went wrong. Please try again " \
                       "later."
             self._message(channel, message.format(nick))
@@ -226,6 +183,21 @@ class Bot(object):
     def _show_quote(self, nick, channel, args):
         """Show a quote on channel"""
 
+        quote_id, quote = self._get_random_quote(channel)
+        if quote:
+            message = "Quote #{0}: {1}".format(quote_id, quote)
+            self._message(channel, message)
+
+            self.logger.info("Showed quote for channel {0}: {1}".format(
+                channel, quote
+            ))
+        else:
+            message = "No quotes in the database. Maybe you should add one?"
+            self._message(channel, message)
+
+            self.logger.info("No quotes for channel {0}".format(channel))
+
+    def _get_random_quote(self, channel):
         max_id = self._get_max_id(self._get_quote_table(channel))
 
         quote_id = randint(1, max_id)
@@ -233,17 +205,12 @@ class Bot(object):
         sql = """
         SELECT quote
         FROM {table}
-        WHERE id = ?""".format(table=self._get_quote_table(channel))
+        WHERE id >= ?
+        LIMIT 1""".format(table=self._get_quote_table(channel))
 
         (quote, ) = self._query(sql, (quote_id,))
 
-        message = "Quote #{0}: {1}".format(quote_id, quote)
-
-        self._message(channel, message)
-
-        self.logger.info("Showed quote for channel {0}: {1}".format(
-            channel, quote
-        ))
+        return quote_id, str(quote)
 
     def _get_max_id(self, table):
         """Get the maximum ID on the given table"""
@@ -387,19 +354,34 @@ class Bot(object):
 class IRCWrapper(SingleServerIRCBot):
     """Convenient wrapper for the irc class methods"""
 
-    def __init__(self, bot, logger, channelList, nickname, server, password,
+    def __init__(self, logger, bot=None, channelList=None, nickname=None,
+                 server=None, password=None,
                  port=6667, commandPrefix='!'):
-
-        super(IRCWrapper, self).__init__(
-            server_list=[(server, port, password)],
-            nickname=nickname,
-            realname=nickname
-        )
 
         self.bot = bot
         self.logger = logger
         self.channelList = channelList
         self.commandPrefix = commandPrefix
+
+        serverList = []
+
+        if password:
+            self.logger.info("Connecting to {0}:{1} with password {2}".format(
+                server, port, password
+            ))
+            serverList.append((server, port, password))
+        else:
+            self.logger.info("Connecting to {0}:{1} with no password".format(
+                server, port
+            ))
+            serverList.append((server, port))
+
+        super(IRCWrapper, self).__init__(
+            server_list=serverList,
+            nickname=nickname,
+            realname=nickname,
+            reconnection_interval=15,
+        )
 
     # Public API
 
@@ -411,9 +393,18 @@ class IRCWrapper(SingleServerIRCBot):
     def is_oper(self, channel, nick):
         """Check if the user is an operator/moderator in the channel"""
 
-        return nick in self.channels[channel].operdict
+        return self.channels[channel].is_oper(nick)
 
     # "Private" methods
+
+    def on_disconnect(self, connection, event):
+        """Event handler for being disconnected from the server"""
+
+        import pdb; pdb.set_trace()
+
+        self.logger.warn("Got disconnected from server: {0}".format(
+            repr(event)
+        ))
 
     def on_welcome(self, connection, event):
         """Event handler for when we connect to the server"""
@@ -438,11 +429,10 @@ class IRCWrapper(SingleServerIRCBot):
 
         self.logger.debug("Got line on {0}: {1}".format(channel, text))
 
-        command, text = self._get_command(text)
+        command, args = self._get_command(text)
 
         if command:
             nick = self._get_nick(event)
-            args = text.split(" ")[1:]
 
             self.bot.irc_command(channel, nick, command, args)
 
@@ -468,15 +458,11 @@ class IRCWrapper(SingleServerIRCBot):
             return None, text
 
         # Strip off the command prefix
-        text = text[len(self.commandPrefix):]
+        text = text[len(self.commandPrefix):].strip()
 
         # Take the first word, in lowercase
         parts = text.split(' ')
         command = parts[0].lower()
+        args = parts[1:]
 
-        return command, text
-
-
-if __name__ == "__main__":
-    bot = Bot(settings, wrapper_class=IRCWrapper)
-    bot.run()
+        return command, args
