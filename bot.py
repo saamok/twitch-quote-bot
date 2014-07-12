@@ -291,7 +291,7 @@ class Bot(object):
         if self.ircWrapper.is_oper(channel, nick):
             # Mods can do whatever they want
             return True
-        if command == 'addquote':
+        if command in ("addquote", "quote",):
             if self._is_regular(channel, nick):
                 return True
 
