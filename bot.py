@@ -288,9 +288,6 @@ class Bot(object):
     def _can_run_command(self, channel, nick, command):
         """Is this guy allowed to run the command in this channel?"""
 
-        # TODO: REMOVE THIS!
-        return True
-
         if self.ircWrapper.is_oper(channel, nick):
             # Mods can do whatever they want
             return True
