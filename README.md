@@ -1,7 +1,15 @@
 twitch-quote-bot
 ================
 
-A bot for spewing quotes in twitch chat rooms. Built for python 2.7
+A simple bot, mainly for Twitch channels, but can be used for other purposes
+ as well.
+
+
+Current build status
+====================
+
+[![Build Status](https://travis-ci.org/lietu/twitch-quote-bot.svg?branch=master)](https://travis-ci.org/lietu/twitch-quote-bot)
+
 
 Requirements
 ============
@@ -12,7 +20,7 @@ Optional:
 * virtualenv
 * virtualenvwrapper
 
-In ubuntu:
+How to install prerequisites in ubuntu:
     sudo apt-get install python-pip
     sudo pip install virtualenv
     sudo pip install virtualenvwrapper
