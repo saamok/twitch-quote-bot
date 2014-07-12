@@ -6,7 +6,6 @@ from irc.bot import Channel
 
 nullLogger = logging.getLogger('null')
 nullLogger.setLevel(999)
-nullLogger.addHandler(logging.NullHandler())
 
 
 class IRCWrapperTest(TestCase):
