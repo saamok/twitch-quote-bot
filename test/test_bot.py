@@ -8,7 +8,6 @@ from bot.bot import Bot
 
 nullLogger = logging.getLogger('null')
 nullLogger.setLevel(999)
-nullLogger.addHandler(logging.NullHandler())
 
 testPath = os.path.dirname(
     os.path.abspath(
