@@ -23,9 +23,9 @@ Setup
 
  1. Get the code from GitHub.
  1. (Optional) Create virtualenv
-    # Create a virtualenv
-    virtualenv virtualenv
-    virtualenv/bin/activate
+    source $(which virtualenvwrapper.sh)
+    mkvirtualenv virtualenv
+    # In the future, instead run: ```workon virtualenv```
  1. Install dependencies
     pip install -r requirements.txt
     # You might have to prepend sudo if not using virtualenv
