@@ -39,6 +39,7 @@ Setup
     # You might have to prepend sudo if not using virtualenv
  1. Copy settings.example.py to settings.py, and edit to needs
  1. Run the bot: ```python -m bot```
+    For Python 2.6 you'll have to use ```python -m bot.__main__```
 
 
 Getting an OAuth token for Twitch chat IRC access
