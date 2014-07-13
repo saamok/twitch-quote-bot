@@ -51,8 +51,6 @@ class IRCWrapper(SingleServerIRCBot):
     def on_disconnect(self, connection, event):
         """Event handler for being disconnected from the server"""
 
-        import pdb; pdb.set_trace()
-
         self.logger.warn("Got disconnected from server: {0}".format(
             repr(event)
         ))

@@ -230,7 +230,6 @@ class Bot(object):
         FROM {table}
         """.format(table=table)
 
-
         (result, ) = self._query(sql)
 
         self.logger.debug("Max ID for {0} seems to be".format(table))
