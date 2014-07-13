@@ -1,6 +1,6 @@
 import logging
 from unittest import TestCase
-from bot.bot import IRCWrapper
+from bot.ircwrapper import IRCWrapper
 from irc.bot import Channel
 
 

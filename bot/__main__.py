@@ -1,4 +1,5 @@
-from .bot import Bot, IRCWrapper
+from .bot import Bot
+from .ircwrapper import IRCWrapper
 from .utils import log, set_log_file
 
 import settings
