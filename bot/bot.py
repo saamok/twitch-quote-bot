@@ -45,6 +45,9 @@ class Bot(object):
                           "{3}".format(command, nick, channel, " ".join(args)))
 
         try:
+            if not self._is_valid_command(command):
+                return
+
             if not self._can_run_command(channel, nick, command):
                 self.logger.info("Command access denied")
                 message = "{0}, sorry, but you are not allowed to use that " \
@@ -66,6 +69,16 @@ class Bot(object):
                       "later."
             self._message(channel, message.format(nick))
             self.logger.error("I caught a booboo .. waah!", exc_info=True)
+
+    def _is_valid_command(self, command):
+        """Check if the command we got is actually a command we support"""
+
+        return command in [
+            "addquote",
+            "delquote",
+            "quote",
+            "reg"
+        ]
 
     def _message(self, channel, message):
         """Send a message to a channel"""
