@@ -73,6 +73,20 @@ class BotTest(TestCase):
 
         assert str(quote) == "test2"
 
+    def test_get_random_quote(self):
+        dbPath = os.path.join(testPath, '__test_bot_get_random_quote.sqlite')
+        self._delete(dbPath)
+
+        settings = Settings()
+        settings.DATABASE_PATH = dbPath
+
+        tmp = Bot(settings, FakeWrapper, logger=nullLogger)
+        tmp._initialize_db()
+        quote_id, quote = tmp._get_random_quote("#tmp")
+
+        assert quote_id == None
+        assert quote == None
+
     def test__query(self):
         dbPath = os.path.join(testPath, '__test_bot_query.sqlite')
         self._delete(dbPath)

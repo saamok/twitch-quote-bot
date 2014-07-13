@@ -210,6 +210,9 @@ class Bot(object):
     def _get_random_quote(self, channel):
         max_id = self._get_max_id(self._get_quote_table(channel))
 
+        if max_id is None:
+            return None, None
+
         quote_id = randint(1, max_id)
 
         sql = """
