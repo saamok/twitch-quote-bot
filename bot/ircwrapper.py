@@ -76,8 +76,6 @@ class IRCWrapper(SingleServerIRCBot):
         text = self._get_text(event)
         channel = self._get_channel(event)
 
-        self.logger.debug("Got line on {0}: {1}".format(channel, text))
-
         command, args = self._get_command(text)
 
         if command:
