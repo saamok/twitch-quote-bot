@@ -7,3 +7,11 @@ function sum_example(...)
 
     return sum
 end
+
+function increment_example()
+    local counter = _G["datasource"]["counter"]
+    counter = counter + 1
+    _G["datasource"]["counter"] = counter
+
+    return counter
+end

@@ -6,12 +6,30 @@ class CommandPermissionError(BaseException):
     pass
 
 
+class DataSource(object):
+    def __init__(self, channel, bot, data=None):
+        if not data:
+            data = {}
+
+        self.channel = channel
+        self.bot = bot
+        self.data = data
+
+    def __getitem__(self, item):
+        return self.__dict__["data"][item]
+
+    def __setitem__(self, key, value):
+        self.__dict__["data"][key] = value
+        self.bot.update_global_value(self.channel, key, value)
+
+
 class CommandManager(object):
-    def __init__(self, channel, bot, logger=None):
+    def __init__(self, channel, bot, data=None, logger=None):
         self.channel = channel
         self.bot = bot
         self.logger = logger
         self.commands = {}
+        self.datasource = DataSource(channel, bot, data)
 
         self.func_template = """
         function {func_name}({args})
@@ -26,6 +44,7 @@ class CommandManager(object):
         """
 
         self.lua = lupa.LuaRuntime(unpack_returned_tuples=False)
+        self._inject_datasource()
 
     def add_command(self, args):
         """Add a new function to the command manager"""
@@ -124,3 +143,12 @@ class CommandManager(object):
         got_level = self._level_name_to_number(user_level)
 
         return got_level >= need_level
+
+    def _inject_datasource(self):
+        injector = self.lua.eval("""
+            function (key, value)
+                _G[key] = value
+            end
+        """)
+
+        injector("datasource", self.datasource)

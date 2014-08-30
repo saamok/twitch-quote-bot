@@ -136,6 +136,21 @@ class BotTest(TestCase):
         assert result["score"] == 2
         assert result["last_spin_time"] > 0
 
+    def test_update_global_value(self):
+        dbPath = os.path.join(testPath, '__test_bot_update_global_value.sqlite')
+        self._delete(dbPath)
+
+        settings = Settings()
+        settings.DATABASE_PATH = dbPath
+
+        bot = Bot(settings, FakeWrapper, logger=nullLogger)
+        bot._initialize_db()
+        bot.update_global_value("#tmp", "test", {"key1": "value1"})
+
+        data = bot._load_channel_data("#tmp")
+
+        assert data["test"]["key1"] == "value1"
+
     def test__query(self):
         dbPath = os.path.join(testPath, '__test_bot_query.sqlite')
         self._delete(dbPath)

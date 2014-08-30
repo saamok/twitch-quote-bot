@@ -1,9 +1,10 @@
 from time import time
 from glob import glob
+import json
 import sqlite3
 from random import randint
 from .utils import human_readable_time
-from .commandmanager import CommandManager
+from .commandmanager import CommandManager, CommandPermissionError
 
 
 class Bot(object):
@@ -34,6 +35,7 @@ class Bot(object):
         self.regulars_table = "regulars_{channel}"
         self.spin_table = "spins_{channel}"
         self.command_table = "commands_{channel}"
+        self.data_table = "data_{channel}"
 
     def __del__(self):
         if self.ircWrapper:
@@ -100,6 +102,11 @@ class Bot(object):
         """Handler for saving commands from the command manager"""
 
         self._set_command(channel, command, user_level, code)
+
+    def update_global_value(self, channel, key, value):
+        """Set a global persistant value on the channel"""
+
+        self._update_channel_data(channel, key, value)
 
     def _handle_custom_command(self, channel, nick, command, args):
         """Handle running custom commands from chat"""
@@ -390,6 +397,20 @@ class Bot(object):
                         .format(table=self._get_command_table(channel))
             )
 
+            sql = """
+            CREATE TABLE IF NOT EXISTS {table}
+            (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              key TEXT,
+              value TEXT
+            )""".format(table=self._get_data_table(channel))
+
+            self._query(sql)
+            self._query("CREATE UNIQUE INDEX IF NOT EXISTS data_key on "
+                        "{table} (key)"
+                        .format(table=self._get_data_table(channel))
+            )
+
     def _can_run_command(self, channel, nick, command):
         """Is this guy allowed to run the command in this channel?"""
 
@@ -542,6 +563,35 @@ class Bot(object):
             nick, channel, score, last_spin_time
         ))
 
+    def _update_channel_data(self, channel, key, value):
+        """Update a single value for this channel's data"""
+
+        sql = """
+        REPLACE INTO {table} (key, value)
+        VALUES(?, ?)
+        """.format(table=self._get_data_table(channel))
+
+        json_value = json.dumps(value)
+
+        self._query(sql, (key, json_value))
+
+
+    def _load_channel_data(self, channel):
+        """Load stored channel data"""
+
+        sql = """
+        SELECT key, value
+        FROM {table}
+        """.format(table=self._get_data_table(channel))
+
+        entries = self._query(sql, multiple_values=True)
+
+        data = {}
+        for entry in entries:
+            data[entry[0]] = json.loads(entry[1])
+
+        return data
+
     def _get_regulars_table(self, channel):
         """Get the table for regulars on this channel"""
 
@@ -561,6 +611,11 @@ class Bot(object):
         """Get the table for commands on this channel"""
 
         return self.command_table.format(channel=self._clean_channel(channel))
+
+    def _get_data_table(self, channel):
+        """Get the table for data on this channel"""
+
+        return self.data_table.format(channel=self._clean_channel(channel))
 
     def _clean_channel(self, channel):
         """Clean a channel name for use in table names"""
@@ -594,9 +649,11 @@ class Bot(object):
         lua_files = self._find_lua_files()
 
         for channel in self.settings.CHANNEL_LIST:
+            channel_data = self._load_channel_data(channel)
             cm = CommandManager(
                 channel,
                 self,
+                channel_data,
                 self.logger
             )
 
