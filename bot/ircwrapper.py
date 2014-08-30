@@ -17,8 +17,8 @@ class IRCWrapper(SingleServerIRCBot):
         serverList = []
 
         if password:
-            self.logger.info("Connecting to {0}:{1} with password {2}".format(
-                server, port, password
+            self.logger.info("Connecting to {0}:{1} using a password".format(
+                server, port
             ))
             serverList.append((server, port, password))
         else:
