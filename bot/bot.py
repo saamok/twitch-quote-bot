@@ -2,7 +2,7 @@ from time import time
 from glob import glob
 import sqlite3
 from random import randint
-from utils import human_readable_time
+from bot.utils import human_readable_time
 import commandmanager
 
 

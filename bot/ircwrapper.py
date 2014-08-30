@@ -1,4 +1,8 @@
-from Queue import Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
+
 from threading import Thread
 from irc.bot import SingleServerIRCBot
 from time import sleep
@@ -30,7 +34,7 @@ class IRCWrapper(SingleServerIRCBot):
         self.logger = logger
         self.channelList = channelList
         self.commandPrefix = commandPrefix
-        self.queue = Queue()
+        self.queue = queue()
         self.thread = None
 
         if bot:
