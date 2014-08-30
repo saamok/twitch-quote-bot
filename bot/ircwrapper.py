@@ -1,7 +1,7 @@
 try:
-    import queue
+    from queue import Queue
 except ImportError:
-    import Queue as queue
+    from Queue import Queue
 
 from threading import Thread
 from irc.bot import SingleServerIRCBot
@@ -34,7 +34,7 @@ class IRCWrapper(SingleServerIRCBot):
         self.logger = logger
         self.channelList = channelList
         self.commandPrefix = commandPrefix
-        self.queue = queue()
+        self.queue = Queue()
         self.thread = None
 
         if bot:
