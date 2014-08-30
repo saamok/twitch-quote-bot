@@ -3,6 +3,7 @@ from unittest import TestCase
 
 
 class FakeBot(object):
+    settings = None
     def set_command(self, channel, name, user_level, code):
         pass
 
@@ -22,10 +23,12 @@ class UtilsTest(TestCase):
         for line in def_commands:
             cm.add_command(line.split(" "))
 
-        retval = cm.run_command("mod", "test_func2", ["10"])
+        retval = cm.run_command("username", "mod", "test_func2", ["10"])
         assert retval == 21
 
-        retval = cm.run_command("mod", "test_args", ["1", "2", "3"])
+        retval = cm.run_command(
+            "username", "mod", "test_args", ["1", "2", "3"]
+        )
         assert retval == 6
 
     def test_permissions(self):
@@ -47,11 +50,12 @@ class UtilsTest(TestCase):
         self.assertRaises(
             bot.commandmanager.CommandPermissionError,
             cm.run_command,
+            "username",
             "reg",
             "mod_func"
         )
 
-        retval = cm.run_command("mod", "mod_func")
+        retval = cm.run_command("username", "mod", "mod_func")
         assert retval == 1
 
         # reg_func
@@ -59,18 +63,19 @@ class UtilsTest(TestCase):
         self.assertRaises(
             bot.commandmanager.CommandPermissionError,
             cm.run_command,
+            "username",
             "user",
             "reg_func"
         )
 
-        retval = cm.run_command("reg", "reg_func")
+        retval = cm.run_command("username", "reg", "reg_func")
         assert retval == 2
 
-        retval = cm.run_command("owner", "reg_func")
+        retval = cm.run_command("username", "owner", "reg_func")
         assert retval == 2
 
         # user_func
 
-        retval = cm.run_command("user", "user_func")
+        retval = cm.run_command("username", "user", "user_func")
         assert retval == 3
 

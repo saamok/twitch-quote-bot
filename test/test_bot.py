@@ -90,52 +90,6 @@ class BotTest(TestCase):
         assert quote_id is None
         assert quote is None
 
-    def test__get_spin_result(self):
-        dbPath = os.path.join(testPath, '__test_bot_get_spin_result.sqlite')
-        self._delete(dbPath)
-
-        settings = Settings()
-        settings.DATABASE_PATH = dbPath
-
-        bot = Bot(settings, FakeWrapper, logger=nullLogger)
-        bot._initialize_db()
-        result = bot._get_spin_result("#tmp", "test")
-
-        assert result["score"] == 0
-        assert result["last_spin_time"] is None
-
-    def test__update_spin_result(self):
-        dbPath = os.path.join(testPath, '__test_bot_update_spin_result.sqlite')
-        self._delete(dbPath)
-
-        settings = Settings()
-        settings.DATABASE_PATH = dbPath
-
-        bot = Bot(settings, FakeWrapper, logger=nullLogger)
-        bot._initialize_db()
-        bot._update_spin_result("#tmp", "test", 1)
-        result = bot._get_spin_result("#tmp", "test")
-
-        assert result["score"] == 1
-        assert result["last_spin_time"] > 0
-
-        bot._update_spin_result("#tmp", "test", 2, False)
-        result = bot._get_spin_result("#tmp", "test")
-
-        assert result["score"] == 2
-        assert result["last_spin_time"] > 0
-
-        bot._update_spin_result("#tmp", "test2", -1351355)
-        result = bot._get_spin_result("#tmp", "test2")
-
-        assert result["score"] == -1351355
-        assert result["last_spin_time"] > 0
-
-        result = bot._get_spin_result("#tmp", "test")
-
-        assert result["score"] == 2
-        assert result["last_spin_time"] > 0
-
     def test_update_global_value(self):
         dbPath = os.path.join(testPath, '__test_bot_update_global_value.sqlite')
         self._delete(dbPath)
@@ -172,42 +126,6 @@ class BotTest(TestCase):
         (quote, ) = bot._query(sql, (1,))
 
         assert str(quote) == "test123"
-
-    def test__get_spin(self):
-        settings = Settings()
-        settings.SPIN_MIN = -1
-        settings.SPIN_MAX = 1
-
-        bot = Bot(settings, FakeWrapper, logger=nullLogger)
-        result = bot._get_spin()
-
-        assert result >= -1
-        assert result <= 1
-
-        settings.SPIN_MIN = 100
-        settings.SPIN_MAX = 100
-
-        bot = Bot(settings, FakeWrapper, logger=nullLogger)
-        result = bot._get_spin()
-
-        assert result == 100
-
-    def test__get_spin_wait(self):
-        settings = Settings()
-        settings.SPIN_TIMEOUT = 60
-
-        bot = Bot(settings, FakeWrapper, logger=nullLogger)
-        result = bot._get_spin_wait(None)
-
-        assert result is None
-
-        result = bot._get_spin_wait(1, 31)
-
-        assert result is 30
-
-        result = bot._get_spin_wait(1, 61)
-
-        assert result is None
 
     def _delete(self, path):
         """Delete a file"""

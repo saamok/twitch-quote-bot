@@ -1,3 +1,5 @@
+from time import time
+from .utils import human_readable_time
 import lupa
 import argparse
 
@@ -44,14 +46,14 @@ class CommandManager(object):
         """
 
         self.lua = lupa.LuaRuntime(unpack_returned_tuples=False)
-        self._inject_datasource()
+        self._inject_globals()
 
     def add_command(self, args):
         """Add a new function to the command manager"""
 
-        command, user_level, code = self._parse_func(args)
+        command, want_user, user_level, code = self._parse_func(args)
 
-        self.load_command(command, user_level, code)
+        self.load_command(command, want_user, user_level, code)
 
         return command, user_level
 
@@ -60,7 +62,7 @@ class CommandManager(object):
 
         return command in self.commands
 
-    def load_command(self, command, user_level, code, set=True):
+    def load_command(self, command, want_user, user_level, code, set=True):
         """Load a previously persisted command"""
 
         if self.logger:
@@ -70,16 +72,19 @@ class CommandManager(object):
             ))
 
         self.commands[command] = {
+            "want_user": want_user,
             "user_level": user_level,
             "code": code
         }
 
         if set:
-            self.bot.set_command(self.channel, command, user_level, code)
+            self.bot.set_command(
+                self.channel, command, want_user, user_level, code
+            )
 
         self.load_lua(code)
 
-    def run_command(self, user_level, command, args=None):
+    def run_command(self, username, user_level, command, args=None):
         """Run a command with the given args"""
 
         if not self._can_run_command(user_level, command):
@@ -91,6 +96,10 @@ class CommandManager(object):
 
         code = self.call_template.format(func_name=command)
         lua_func = self.lua.eval(code)
+
+        if self.commands[command]["want_user"]:
+            args.insert(0, username)
+
         retval = lua_func(*args)
 
         return retval
@@ -106,11 +115,20 @@ class CommandManager(object):
         parser = argparse.ArgumentParser()
         parser.add_argument("-ul", "--user_level", default="mod")
         parser.add_argument("-a", "--args", default="")
+        parser.add_argument("-w", "--want_user", action="store_true",
+                            default=False)
         parser.add_argument("func_name")
         parser.add_argument("func_body", nargs='*')
         options = parser.parse_args(args)
 
         # Rebuild code
+
+        if options.want_user:
+            new_args = "user"
+            if len(options.args) > 0:
+                new_args += ","
+
+            options.args = new_args + options.args
 
         code = self.func_template.format(
             func_name=options.func_name,
@@ -118,7 +136,7 @@ class CommandManager(object):
             func_body=" ".join(options.func_body)
         )
 
-        return options.func_name, options.user_level, code
+        return options.func_name, options.want_user, options.user_level, code
 
     def _level_name_to_number(self, name):
         levels = [
@@ -144,7 +162,7 @@ class CommandManager(object):
 
         return got_level >= need_level
 
-    def _inject_datasource(self):
+    def _inject_globals(self):
         injector = self.lua.eval("""
             function (key, value)
                 _G[key] = value
@@ -152,3 +170,5 @@ class CommandManager(object):
         """)
 
         injector("datasource", self.datasource)
+        injector("human_readable_time", human_readable_time)
+        injector("settings", self.bot.settings)
