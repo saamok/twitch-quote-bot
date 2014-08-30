@@ -27,12 +27,16 @@ class IRCWrapper(SingleServerIRCBot):
                  port=6667, commandPrefix='!'):
 
         self.bot = bot
-        self.queue_delay = bot.settings.QUEUE_DELAY
         self.logger = logger
         self.channelList = channelList
         self.commandPrefix = commandPrefix
         self.queue = Queue()
         self.thread = None
+
+        if bot:
+            self.queue_delay = bot.settings.QUEUE_DELAY
+        else:
+            self.queue_delay = 1
 
         serverList = []
 

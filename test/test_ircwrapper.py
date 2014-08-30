@@ -53,8 +53,12 @@ class IRCWrapperTest(TestCase):
                 self.target = channel
                 self.source = EventSource(nick)
 
+        class FakeSettings(object):
+            QUEUE_DELAY = 1
+
         class FakeBot(object):
             data = None
+            settings = FakeSettings()
 
             def irc_command(self, *args):
                 self.data = args
