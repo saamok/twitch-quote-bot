@@ -184,7 +184,7 @@ class BotTest(TestCase):
         bot = Bot(settings, FakeWrapper, logger=nullLogger)
         result = bot._get_spin_wait(None)
 
-        assert result is True
+        assert result is None
 
         result = bot._get_spin_wait(1, 31)
 
@@ -192,7 +192,7 @@ class BotTest(TestCase):
 
         result = bot._get_spin_wait(1, 61)
 
-        assert result is True
+        assert result is None
 
     def _delete(self, path):
         """Delete a file"""

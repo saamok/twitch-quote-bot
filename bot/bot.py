@@ -459,7 +459,7 @@ class Bot(object):
         """Check if it's ok to spin right now"""
 
         if last_spin_time is None:
-            return True
+            return None
 
         if current_time is None:
             current_time = int(time())
@@ -467,7 +467,7 @@ class Bot(object):
         allow_spin_since = last_spin_time + self.settings.SPIN_TIMEOUT
 
         if allow_spin_since <= current_time:
-            return True
+            return None
         else:
             return allow_spin_since - current_time
 
