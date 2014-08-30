@@ -3,7 +3,7 @@ from glob import glob
 import sqlite3
 from random import randint
 from .utils import human_readable_time
-import commandmanager
+from .commandmanager import CommandManager
 
 
 class Bot(object):
@@ -109,7 +109,7 @@ class Bot(object):
 
         try:
             result = cm.run_command(user_level, command, args)
-        except commandmanager.CommandPermissionError:
+        except CommandPermissionError:
             result = "you don't have permissions to run that command"
 
         message = "{0}, {1}".format(
@@ -594,7 +594,7 @@ class Bot(object):
         lua_files = self._find_lua_files()
 
         for channel in self.settings.CHANNEL_LIST:
-            cm = commandmanager.CommandManager(
+            cm = CommandManager(
                 channel,
                 self,
                 self.logger
