@@ -177,24 +177,22 @@ class BotTest(TestCase):
 
         assert result == 100
 
-    def test__is_spin_ok(self):
+    def test__get_spin_wait(self):
         settings = Settings()
         settings.SPIN_TIMEOUT = 60
 
         bot = Bot(settings, FakeWrapper, logger=nullLogger)
-        result = bot._is_spin_ok(None)
+        result = bot._get_spin_wait(None)
 
         assert result is True
 
-        result = bot._is_spin_ok(1, 30)
+        result = bot._get_spin_wait(1, 31)
 
-        assert result is False
+        assert result is 30
 
-        result = bot._is_spin_ok(1, 61)
+        result = bot._get_spin_wait(1, 61)
 
         assert result is True
-
-
 
     def _delete(self, path):
         """Delete a file"""

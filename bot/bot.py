@@ -1,7 +1,7 @@
 from time import time
 import sqlite3
 from random import randint
-
+from utils import human_readable_time
 
 class Bot(object):
     """The core bot logic"""
@@ -106,9 +106,11 @@ class Bot(object):
         else:
             new = False
 
-        if not self._is_spin_ok(previous["last_spin_time"]):
-            message = "{0}, you need to chillax man, try again later..."
-            self._message(channel, message.format(nick))
+        spin_wait = self._get_spin_wait(previous["last_spin_time"])
+        if spin_wait is not None:
+            wait_time = human_readable_time(spin_wait)
+            message = "{0}, you need to chillax, try again in {1}..."
+            self._message(channel, message.format(nick, wait_time))
             return
 
         spin = self._get_spin()
@@ -116,8 +118,8 @@ class Bot(object):
 
         self._update_spin_result(channel, nick, total_score, new)
 
-        message = "{0}, the wheel of fortune has granted you {1} points! " \
-                  "You now have a total of {2} points."
+        message = "{0}, the wheel of fortune has granted you {1} point(s)! " \
+                  "You now have a total of {2} point(s)."
 
         self._message(channel, message.format(
             nick, spin, total_score
@@ -453,7 +455,7 @@ class Bot(object):
 
         return channel.replace("#", "_")
 
-    def _is_spin_ok(self, last_spin_time, current_time=None):
+    def _get_spin_wait(self, last_spin_time, current_time=None):
         """Check if it's ok to spin right now"""
 
         if last_spin_time is None:
@@ -467,7 +469,7 @@ class Bot(object):
         if allow_spin_since <= current_time:
             return True
         else:
-            return False
+            return allow_spin_since - current_time
 
     def _get_spin(self):
         """Get a new spin score"""
