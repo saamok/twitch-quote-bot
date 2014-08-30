@@ -98,6 +98,24 @@ you might want to go there:
 cd /src
 ```
 
+Running tests
+=============
+
+When you have your Vagrant based development environment (or any other 
+correctly set up environment) running, and you're in the root of the source 
+folder you can run the unit tests via nose:
+```
+nosetests
+```
+
+If using the Vagrant VM in Windows, the shared folder causes some minor 
+issues, you can work around that by telling nose to also include executable 
+files in it's search for valid tests:
+```
+nosetests --exe
+```
+
+
 Salt Stack
 ==========
 
