@@ -1,8 +1,10 @@
 twitch-quote-bot
 ================
 
-A simple bot, mainly for Twitch channels, but can be used for other purposes
- as well.
+A bot mainly for Twitch channels, but can be used for other purposes as well.
+ 
+The bot supports writing custom commands using Lua, and saves it's states in
+ an sqlite database.
 
 
 Current build status
@@ -40,6 +42,50 @@ Setup
  1. Copy settings.example.py to settings.py, and edit to needs
  1. Run the bot: ```python -m bot```
     For Python 2.6 you'll have to use ```python -m bot.__main__```
+
+
+Custom commands
+===============
+
+You can add custom commands to the bot via the chat interface if you are a 
+moderator.
+
+The command for defining lua functions is "def" (add your prefix, e.g. !).
+
+The syntax is:
+```
+!def [--user_level=userlevel] [--args=arguments] command_name <lua code>
+```
+
+Instead of "--user_level" you can use "-ul" and instead of "--args" you can 
+use "-a".
+
+Any value returned by the function will be output back in chat by the bot.
+
+So assuming your using the default prefix of "!", you can e.g. create a 
+function that greets people on the channel:
+```
+!def -ul=mod -a=user hello return "Hi, " .. user
+```
+
+And you'd call that function e.g. ```!hello lietu```.
+
+The def command allows limiting user access via the -ul= or --user_level= 
+argument, valid values are: "user", "reg", "mod", and "owner" (not yet 
+implemented)
+
+You can define what arguments your function accepts from the chat using -a= or
+ --args=, "..." is a lua magic argument that gives all the given arguments 
+ in a variable called "arg", and it works fine with this bot.
+  
+```
+!def -ul=reg --args=... sum 
+!def --args=user,gift gift return user .. ", please accept this " .. gift
+```
+
+The functions will automatically be persisted to the sqlite database.
+
+
 
 
 Getting an OAuth token for Twitch chat IRC access

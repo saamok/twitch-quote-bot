@@ -2,6 +2,8 @@ from time import time
 import sqlite3
 from random import randint
 from utils import human_readable_time
+import commandmanager
+
 
 class Bot(object):
     """The core bot logic"""
@@ -22,12 +24,15 @@ class Bot(object):
             settings.COMMAND_PREFIX
         )
 
+        self.command_managers = {}
+
         self.db = sqlite3.connect(settings.DATABASE_PATH)
         self.cursor = self.db.cursor()
 
         self.quote_table = "quotes_{channel}"
         self.regulars_table = "regulars_{channel}"
         self.spin_table = "spins_{channel}"
+        self.command_table = "commands_{channel}"
 
     def __del__(self):
         if self.ircWrapper:
@@ -40,6 +45,8 @@ class Bot(object):
 
         self._initialize_db()
 
+        self._initialize_command_managers()
+
         self.logger.info("Starting IRC connection")
         self.ircWrapper.start()
 
@@ -50,7 +57,10 @@ class Bot(object):
                           "{3}".format(command, nick, channel, " ".join(args)))
 
         try:
-            if not self._is_valid_command(command):
+            if not self._is_core_command(command):
+                cm = self.command_managers[channel]
+                if cm.is_valid_command(command):
+                    self._handle_custom_command(channel, nick, command, args)
                 return
 
             if not self._can_run_command(channel, nick, command):
@@ -70,6 +80,14 @@ class Bot(object):
                 self._show_quote(nick, channel, args)
             elif command == "reg":
                 self._manage_regulars(nick, channel, args)
+            elif command == "def":
+                cm = self.command_managers[channel]
+                command, user_level = cm.add_command(args)
+
+                message = "{0}, added command {1} for user level {2}".format(
+                    nick, command, user_level
+                )
+                self._message(channel, message)
 
         except:
             message = "{0}, whoah, something went wrong. Please try again " \
@@ -77,7 +95,29 @@ class Bot(object):
             self._message(channel, message.format(nick))
             self.logger.error("I caught a booboo .. waah!", exc_info=True)
 
-    def _is_valid_command(self, command):
+    def set_command(self, channel, command, user_level, code):
+        """Handler for saving commands from the command manager"""
+
+        self._set_command(channel, command, user_level, code)
+
+    def _handle_custom_command(self, channel, nick, command, args):
+        """Handle running custom commands from chat"""
+
+        user_level = self._get_user_level(channel, nick)
+        cm = self.command_managers[channel]
+
+        try:
+            result = cm.run_command(user_level, command, args)
+        except commandmanager.CommandPermissionError:
+            result = "you don't have permissions to run that command"
+
+        message = "{0}, {1}".format(
+            nick, result
+        )
+
+        self._message(channel, message)
+
+    def _is_core_command(self, command):
         """Check if the command we got is actually a command we support"""
 
         return command in [
@@ -85,8 +125,21 @@ class Bot(object):
             "delquote",
             "quote",
             "spin",
-            "reg"
+            "reg",
+            "def"
         ]
+
+    def _get_user_level(self, channel, user):
+        """Figure out the user's level on the channel"""
+
+        level = "user"
+
+        if self._is_mod(channel, user):
+            level = "mod"
+        elif self._is_regular(channel, user):
+            level = "reg"
+
+        return level
 
     def _message(self, channel, message):
         """Send a message to a channel"""
@@ -283,6 +336,7 @@ class Bot(object):
 
         for channel in self.settings.CHANNEL_LIST:
             self.logger.debug("Creating tables for {0}".format(channel))
+            # TODO: Convert to an .sql file
             sql = """
             CREATE TABLE IF NOT EXISTS {table}
             (
@@ -299,6 +353,12 @@ class Bot(object):
               nick TEXT
             )""".format(table=self._get_regulars_table(channel))
 
+            self._query(sql)
+            self._query("CREATE UNIQUE INDEX IF NOT EXISTS reg_nick on "
+                        "{table} (nick)".format(
+                table=self._get_regulars_table(channel)
+            ))
+
             sql = """
             CREATE TABLE IF NOT EXISTS {table}
             (
@@ -309,11 +369,30 @@ class Bot(object):
             )""".format(table=self._get_spin_table(channel))
 
             self._query(sql)
+            self._query("CREATE UNIQUE INDEX IF NOT EXISTS spin_nick on "
+                        "{table} (nick)".format(
+                table=self._get_spin_table(channel)
+            ))
+
+            sql = """
+            CREATE TABLE IF NOT EXISTS {table}
+            (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              command TEXT,
+              user_level TEXT,
+              code TEXT
+            )""".format(table=self._get_command_table(channel))
+
+            self._query(sql)
+            self._query("CREATE UNIQUE INDEX IF NOT EXISTS command on "
+                        "{table} (command)"
+                        .format(table=self._get_command_table(channel))
+            )
 
     def _can_run_command(self, channel, nick, command):
         """Is this guy allowed to run the command in this channel?"""
 
-        if self.ircWrapper.is_oper(channel, nick):
+        if self._is_mod(channel, nick):
             # Mods can do whatever they want
             return True
         elif command in ("addquote", "quote"):
@@ -324,6 +403,33 @@ class Bot(object):
             return True
 
         return False
+
+    def _is_mod(self, channel, user):
+        """Check if the given user is a mod on the given channel"""
+
+        return self.ircWrapper.is_oper(channel, user)
+
+    def _set_command(self, channel, command, user_level, code):
+        """Save a command on the channel"""
+
+        sql = """
+        REPLACE INTO {table} (command, user_level, code)
+        VALUES(?, ?, ?)
+        """.format(table=self._get_command_table(channel))
+
+        self._query(sql, (command, user_level, code))
+
+    def _load_commands(self, channel):
+        """Load the commands available for this channel"""
+
+        sql = """
+        SELECT command, user_level, code
+        FROM {table}
+        """.format(table=self._get_command_table(channel))
+
+        entries = self._query(sql, multiple_values=True)
+
+        return entries
 
     def _is_regular(self, channel, nick):
         """Is this guy on the regulars list?"""
@@ -450,6 +556,11 @@ class Bot(object):
 
         return self.quote_table.format(channel=self._clean_channel(channel))
 
+    def _get_command_table(self, channel):
+        """Get the table for commands on this channel"""
+
+        return self.command_table.format(channel=self._clean_channel(channel))
+
     def _clean_channel(self, channel):
         """Clean a channel name for use in table names"""
 
@@ -476,7 +587,26 @@ class Bot(object):
 
         return randint(self.settings.SPIN_MIN, self.settings.SPIN_MAX)
 
-    def _query(self, sql, args=None):
+    def _initialize_command_managers(self):
+        """Initialize our channel command managers"""
+
+        for channel in self.settings.CHANNEL_LIST:
+            cm = commandmanager.CommandManager(
+                channel,
+                self,
+                self.logger
+            )
+
+            commands = self._load_commands(channel)
+
+            for command_data in commands:
+                cm.load_command(*command_data, set=False)
+
+            self.command_managers[channel] = cm
+
+    def _query(self, sql, args=None, multiple_values=False):
+        """Run a query against our sqlite database"""
+
         retval = None
 
         keyword = sql.strip().split(" ")[0].lower()
@@ -488,7 +618,10 @@ class Bot(object):
                 self.cursor.execute(sql)
 
             if keyword == "select":
-                retval = self.cursor.fetchone()
+                if multiple_values:
+                    retval = self.cursor.fetchall()
+                else:
+                    retval = self.cursor.fetchone()
             else:
                 self.db.commit()
 
