@@ -86,6 +86,25 @@ You can define what arguments your function accepts from the chat using -a= or
 The functions will automatically be persisted to the sqlite database.
 
 
+Lua code files
+==============
+
+You can add custom Lua code to the bot by writing them in .lua files in the 
+lua/ -folder (or whatever you configured LUA_INCLUDE_GLOB for). There will 
+not be a interface for the chat created automatically for these commands, 
+but it's fairly easy for you to add the interface to a complex Lua 
+application separately.
+
+By default, there is a simple example in lua/example.lua, 
+and you can add a chat interface to it quite simply:
+```
+!def --args=... sum return sum_example(unpack(arg))
+```
+
+And then just call it via the newly created custom command:
+```
+!sum 1 2 3
+```
 
 
 Getting an OAuth token for Twitch chat IRC access

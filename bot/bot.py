@@ -1,4 +1,5 @@
 from time import time
+from glob import glob
 import sqlite3
 from random import randint
 from utils import human_readable_time
@@ -590,6 +591,8 @@ class Bot(object):
     def _initialize_command_managers(self):
         """Initialize our channel command managers"""
 
+        lua_files = self._find_lua_files()
+
         for channel in self.settings.CHANNEL_LIST:
             cm = commandmanager.CommandManager(
                 channel,
@@ -597,12 +600,23 @@ class Bot(object):
                 self.logger
             )
 
+            for filename in lua_files:
+                with open(filename, 'r') as handle:
+                    code = handle.read()
+                    self.logger.debug("Loading Lua for {0} from {1}".format(
+                        channel, filename
+                    ))
+                    cm.load_lua(code)
+
             commands = self._load_commands(channel)
 
             for command_data in commands:
                 cm.load_command(*command_data, set=False)
 
             self.command_managers[channel] = cm
+
+    def _find_lua_files(self):
+        return glob(self.settings.LUA_INCLUDE_GLOB)
 
     def _query(self, sql, args=None, multiple_values=False):
         """Run a query against our sqlite database"""

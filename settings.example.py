@@ -34,6 +34,8 @@ SPIN_MAX = 250
 # How many seconds do users need to wait between spins? 3600 = 1 hour
 SPIN_TIMEOUT = 3600
 
+# A glob pattern for including Lua code with
+LUA_INCLUDE_GLOB = "lua/*.lua"
 
 # ----- --------- -----
 # ----- Internals -----
