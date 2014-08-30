@@ -62,3 +62,4 @@ virtualenv/
 settings.py
 *.db
 *.sqlite
+.vagrant/

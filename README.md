@@ -49,3 +49,65 @@ You should visit these pages for help:
 
  * http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc
  * http://twitchapps.com/tmi/
+
+
+Development environment
+=======================
+
+The development environment is built into the project via Vagrant.
+
+To start using the development environment, install the following:
+
+ * [Vagrant](https://www.vagrantup.com/)
+ * [VirtualBox](https://www.virtualbox.org/)
+
+After these are installed, you can boot up the Vagrant virtual machine.
+
+Open a terminal, and change to the root directory of the project, 
+then tell Vagrant to boot up the machine:
+
+```
+vagrant up
+```
+
+Once the VM is up, you can connect to it over SSH.
+
+You can open your favorite SSH client (e.g. [KiTTY](http://www.9bis
+.net/kitty/) on Windows) by using the IP address ```172.30.30.30```.
+
+Alternatively on Linux and Mac OS X you can connect to it with:
+```
+vagrant ssh
+```
+
+User and password are both: ```vagrant```
+
+To get to the development environment, you need to switch users:
+```
+sudo su - bot
+```
+
+Then activate the bot virtual environment:
+```
+workon bot
+```
+
+The source code is located on the virtual machine in /src, 
+you might want to go there:
+```
+cd /src
+```
+
+Salt Stack
+==========
+
+The development environment VM configuration is managed with Salt Stack.
+
+If you make changes within the salt/ -directory, you can tell vagrant to 
+apply the changes via Salt:
+```
+vagrant provision
+```
+
+Also if you pull changes from GitHub, you should probably run that command 
+before trying to continue using the VM.
