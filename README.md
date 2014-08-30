@@ -17,13 +17,14 @@ Requirements
 ============
 * Python 2.6 - 3.3
 * pip
+* lua (5.1, 5.2 or luajit should work)
 
 Optional:
 * virtualenv
 * virtualenvwrapper
 
 How to install prerequisites in ubuntu:
-    sudo apt-get install python-pip
+    sudo apt-get install python-pip lua5.1 liblua5.1-dev
     sudo pip install virtualenv
     sudo pip install virtualenvwrapper
 
