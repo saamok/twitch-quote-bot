@@ -31,8 +31,8 @@ COMMAND_PREFIX = "!"
 SPIN_MIN = -100
 SPIN_MAX = 250
 
-# How many seconds do users need to wait between spins?
-SPIN_TIMEOUT = 60
+# How many seconds do users need to wait between spins? 3600 = 1 hour
+SPIN_TIMEOUT = 3600
 
 
 # ----- --------- -----
