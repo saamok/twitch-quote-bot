@@ -1,3 +1,4 @@
+from math import floor
 import logging
 
 
@@ -36,3 +37,28 @@ def set_log_file(log_file):
     fh.setFormatter(_get_formatter())
 
     log.addHandler(fh)
+
+def human_readable_time(seconds):
+    units = [
+        ("year(s)", 60 * 60 * 24 * 365),
+        ("month(s)", 60 * 60 * 24 * 30),
+        ("week(s)", 60 * 60 * 24 * 7),
+        ("day(s)", 60 * 60 * 24),
+        ("hour(s)", 60 * 60),
+        ("minute(s)", 60),
+        ("second(s)", 1)
+    ]
+
+    values = []
+
+    for key, unit_seconds in units:
+        unit_count = int(floor(seconds / unit_seconds))
+        if unit_count > 0:
+            values.append("{0} {1}".format(
+                unit_count, key
+            ))
+            seconds -= unit_seconds * unit_count
+
+    output = " ".join(values)
+
+    return output
