@@ -1,3 +1,4 @@
+from time import time
 import sqlite3
 from random import randint
 
@@ -26,6 +27,7 @@ class Bot(object):
 
         self.quote_table = "quotes_{channel}"
         self.regulars_table = "regulars_{channel}"
+        self.spin_table = "spins_{channel}"
 
     def run(self):
         """Run the bot until we want to stop"""
@@ -56,6 +58,8 @@ class Bot(object):
 
             if command == "addquote":
                 self._add_quote(nick, channel, args)
+            elif command == "spin":
+                self._spin(nick, channel, args)
             elif command == "delquote":
                 self._del_quote(nick, channel, args)
             elif command == "quote":
@@ -76,6 +80,7 @@ class Bot(object):
             "addquote",
             "delquote",
             "quote",
+            "spin",
             "reg"
         ]
 
@@ -87,6 +92,32 @@ class Bot(object):
         ))
 
         self.ircWrapper.message(channel, message)
+
+    def _spin(self, nick, channel, args):
+        """Spin the wheel of fortune"""
+
+        previous = self._get_spin_result(channel, nick)
+        if previous["last_spin_time"] is None:
+            new = True
+        else:
+            new = False
+
+        if not self._is_spin_ok(previous["last_spin_time"]):
+            message = "{0}, you need to chillax man, try again later..."
+            self._message(channel, message.format(nick))
+            return
+
+        spin = self._get_spin()
+        total_score = spin + previous["score"]
+
+        self._update_spin_result(channel, nick, total_score, new)
+
+        message = "{0}, the wheel of fortune has granted you {1} points! " \
+                  "You now have a total of {2} points."
+
+        self._message(channel, message.format(
+            nick, spin, total_score
+        ))
 
     def _add_quote(self, nick, channel, args):
         """Add a quote to the database"""
@@ -262,6 +293,15 @@ class Bot(object):
               nick TEXT
             )""".format(table=self._get_regulars_table(channel))
 
+            sql = """
+            CREATE TABLE IF NOT EXISTS {table}
+            (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              nick TEXT,
+              score INTEGER,
+              last_spin_time INTEGER
+            )""".format(table=self._get_spin_table(channel))
+
             self._query(sql)
 
     def _can_run_command(self, channel, nick, command):
@@ -270,9 +310,12 @@ class Bot(object):
         if self.ircWrapper.is_oper(channel, nick):
             # Mods can do whatever they want
             return True
-        if command in ("addquote", "quote",):
+        elif command in ("addquote", "quote"):
             if self._is_regular(channel, nick):
                 return True
+        elif command in ("spin", ):
+            # Public commands
+            return True
 
         return False
 
@@ -324,10 +367,77 @@ class Bot(object):
 
         self.logger.info("Removed regular {0} from {1}".format(nick, channel))
 
+    def _get_spin_result(self, channel, nick):
+        """Get any previous spin result data for this user"""
+
+        sql = """
+        SELECT score, last_spin_time
+        FROM {table}
+        WHERE nick=?
+        """.format(table=self._get_spin_table(channel))
+
+        result = self._query(sql, (nick, ))
+        self.logger.debug("Spin result for {0}: {1}".format(
+            nick, repr(result)
+        ))
+
+        if result is None:
+            self.logger.debug("{0} has no previous spin result for {1}".format(
+                nick, channel
+            ))
+
+            return {
+                "score": 0,
+                "last_spin_time": None
+            }
+
+        (score, last_spin_time) = result
+
+        self.logger.debug("{0} previous spin result on {1} was {2} at {3}"
+                          "".format(
+            nick, channel, score, last_spin_time
+        ))
+
+        return {
+            "score": score,
+            "last_spin_time": last_spin_time
+        }
+
+    def _update_spin_result(self, channel, nick, score, new=True):
+        """Write a spin result for this user"""
+
+        last_spin_time = int(time())
+
+        if new:
+            sql = """
+            INSERT INTO {table} (nick, score, last_spin_time)
+            VALUES(?, ?, ?)
+            """.format(table=self._get_spin_table(channel))
+
+            self._query(sql, (nick, score, last_spin_time))
+        else:
+            sql = """
+            UPDATE {table}
+            SET score=?,
+                last_spin_time=?
+            WHERE nick=?
+            """.format(table=self._get_spin_table(channel))
+
+            self._query(sql, (score, last_spin_time, nick))
+
+        self.logger.info("Updated {0} score on {1} to {2} at {3}".format(
+            nick, channel, score, last_spin_time
+        ))
+
     def _get_regulars_table(self, channel):
         """Get the table for regulars on this channel"""
 
         return self.regulars_table.format(channel=self._clean_channel(channel))
+
+    def _get_spin_table(self, channel):
+        """Get the table for spin results on this channel"""
+
+        return self.spin_table.format(channel=self._clean_channel(channel))
 
     def _get_quote_table(self, channel):
         """Get the table for quotes on this channel"""
@@ -338,6 +448,27 @@ class Bot(object):
         """Clean a channel name for use in table names"""
 
         return channel.replace("#", "_")
+
+    def _is_spin_ok(self, last_spin_time, current_time=None):
+        """Check if it's ok to spin right now"""
+
+        if last_spin_time is None:
+            return True
+
+        if current_time is None:
+            current_time = int(time())
+
+        allow_spin_since = last_spin_time + self.settings.SPIN_TIMEOUT
+
+        if allow_spin_since <= current_time:
+            return True
+        else:
+            return False
+
+    def _get_spin(self):
+        """Get a new spin score"""
+
+        return randint(self.settings.SPIN_MIN, self.settings.SPIN_MAX)
 
     def _query(self, sql, args=None):
         retval = None

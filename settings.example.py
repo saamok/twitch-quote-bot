@@ -26,3 +26,11 @@ LOG_FILE = None
 # What prefix do you want for all commands? E.g. with "!" you run !addquote,
 # you could also set this to "foobar" and the command would be "foobaraddquote"
 COMMAND_PREFIX = "!"
+
+
+# Spin configuration, min and max spin results
+SPIN_MIN = -100
+SPIN_MAX = 250
+
+# How many seconds do users need to wait between spins?
+SPIN_TIMEOUT = 60
