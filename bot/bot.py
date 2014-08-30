@@ -29,6 +29,10 @@ class Bot(object):
         self.regulars_table = "regulars_{channel}"
         self.spin_table = "spins_{channel}"
 
+    def __del__(self):
+        if self.ircWrapper:
+            self.ircWrapper.stop()
+
     def run(self):
         """Run the bot until we want to stop"""
 

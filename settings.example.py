@@ -27,10 +27,21 @@ LOG_FILE = None
 # you could also set this to "foobar" and the command would be "foobaraddquote"
 COMMAND_PREFIX = "!"
 
-
 # Spin configuration, min and max spin results
 SPIN_MIN = -100
 SPIN_MAX = 250
 
 # How many seconds do users need to wait between spins?
 SPIN_TIMEOUT = 60
+
+
+# ----- --------- -----
+# ----- Internals -----
+# ----- --------- -----
+#
+# You probably don't need to touch these settings
+
+# How many seconds the IRC layer will wait between processing outgoing
+# commands
+QUEUE_DELAY = 2.5
+

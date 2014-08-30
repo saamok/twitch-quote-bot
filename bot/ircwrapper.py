@@ -1,4 +1,21 @@
+from Queue import Queue
+from threading import Thread
 from irc.bot import SingleServerIRCBot
+from time import sleep
+
+
+class Task(object):
+    def __init__(self, method, *args, **kwargs):
+        self.method = method
+        self.args = args
+        self.kwargs = kwargs
+
+    def __str__(self):
+        return "<Task for method {0} with {1} args and {2} kwargs>".format(
+            self.method,
+            len(self.args),
+            len(self.kwargs)
+        )
 
 
 class IRCWrapper(SingleServerIRCBot):
@@ -10,9 +27,12 @@ class IRCWrapper(SingleServerIRCBot):
                  port=6667, commandPrefix='!'):
 
         self.bot = bot
+        self.queue_delay = bot.settings.QUEUE_DELAY
         self.logger = logger
         self.channelList = channelList
         self.commandPrefix = commandPrefix
+        self.queue = Queue()
+        self.thread = None
 
         serverList = []
 
@@ -36,10 +56,25 @@ class IRCWrapper(SingleServerIRCBot):
 
     # Public API
 
-    def message(self, channel, message):
-        """Send a message to the channel"""
+    def start(self):
+        """Start the IRC connection and thread"""
 
-        self.connection.privmsg(channel, message)
+        self._start_thread()
+        super(IRCWrapper, self).start()
+
+    def stop(self):
+        """Stop our threads etc."""
+
+        self.queue.put(None)
+
+    def message(self, channel, message):
+        """Request to send a message to the channel"""
+
+        self.queue.put(Task(
+            "_send_message",
+            channel,
+            message
+        ))
 
     def is_oper(self, channel, nick):
         """Check if the user is an operator/moderator in the channel"""
@@ -47,6 +82,42 @@ class IRCWrapper(SingleServerIRCBot):
         return self.channels[channel].is_oper(nick)
 
     # "Private" methods
+
+    def _start_thread(self):
+        """Start a thread that will work on the tasks"""
+
+        def worker():
+            while True:
+                task = self.queue.get()
+
+                if task == None:
+                    return
+
+                self._process_task(task)
+                sleep(self.queue_delay)
+
+        self.thread = Thread(target=worker)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def _process_task(self, task):
+        """Process a single Task object"""
+
+        method = getattr(self, task.method)
+        if not method:
+            raise ValueError("No method {0} in IRC wrapper?".format(
+                task.method
+            ))
+
+        method(*task.args, **task.kwargs)
+
+    def _send_message(self, channel, message):
+        """Actually send a message on a channel"""
+
+        self.logger.info("Delivering message to {0}: {1}".format(
+            channel, message
+        ))
+        self.connection.privmsg(channel, message)
 
     def on_disconnect(self, connection, event):
         """Event handler for being disconnected from the server"""

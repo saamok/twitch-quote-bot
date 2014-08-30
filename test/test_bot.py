@@ -20,6 +20,9 @@ class FakeWrapper(object):
     def __init__(self, *args):
         pass
 
+    def stop(self):
+        pass
+
     def message(self, *args):
         pass
 
