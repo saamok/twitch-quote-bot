@@ -41,6 +41,12 @@ LUA_INCLUDE_GLOB = "lua/*.lua"
 # require()d
 LUA_PATH = "lua/lib/?.lua;lua/lib/?/?.lua"
 
+# These nicknames are always considered to have the highest user level (
+# owner) by the bot
+OWNER_USERS = [
+    "lietu"
+]
+
 # ----- --------- -----
 # ----- Internals -----
 # ----- --------- -----

@@ -128,6 +128,13 @@ class BotTest(TestCase):
         assert bot._is_allowed_to_run_command("#a", "a", "reg") is True
         assert bot._is_allowed_to_run_command("#a", "a", "def") is True
 
+        bot._get_user_level = Mock(return_value="owner")
+        assert bot._is_allowed_to_run_command("#a", "a", "addquote") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "delquote") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "quote") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "reg") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "def") is True
+
     def _delete(self, path):
         """Delete a file"""
 

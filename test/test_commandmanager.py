@@ -37,6 +37,7 @@ class UtilsTest(TestCase):
 
         # Some test command definitions
         def_commands = [
+            "-ul=owner owner_func return 0",
             "-ul=mod mod_func return 1",
             "-ul=reg reg_func return 2",
             "-ul=user user_func return 3"
@@ -44,6 +45,19 @@ class UtilsTest(TestCase):
 
         for line in def_commands:
             cm.add_command(line.split(" "))
+
+        # owner_func
+
+        self.assertRaises(
+            bot.commandmanager.CommandPermissionError,
+            cm.run_command,
+            "username",
+            "mod",
+            "owner_func"
+        )
+
+        retval = cm.run_command("username", "owner", "owner_func")
+        assert retval == 0
 
         # mod_func
 

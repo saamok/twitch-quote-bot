@@ -192,7 +192,9 @@ class Bot(object):
 
         level = "user"
 
-        if self._is_mod(channel, nick):
+        if self._is_owner(nick):
+            level = "owner"
+        elif self._is_mod(channel, nick):
             level = "mod"
         elif self._is_regular(channel, nick):
             level = "reg"
@@ -212,8 +214,8 @@ class Bot(object):
 
         user_level = self._get_user_level(channel, nick)
 
-        if user_level == "mod":
-            # Mods can do whatever they want
+        if user_level in ("mod", "owner"):
+            # Mods and owners can run any and all core commands
             return True
         elif command in ("addquote", "delquote", "quote"):
             if user_level == "reg":
@@ -243,6 +245,16 @@ class Bot(object):
 
         model = self._get_model(channel, "regulars")
         return model.filter(nick=nick).exists()
+
+    def _is_owner(self, nick):
+        """
+        Check if the given nick belongs to a bot owner
+
+        :param nick: The nick
+        :return: True or False
+        """
+
+        return nick in self.settings.OWNER_USERS
 
     #
     # Chat commands
