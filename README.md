@@ -117,8 +117,21 @@ And then just call it via the newly created custom command:
 !sum 1 2 3
 ```
 
+Lua library files
+=================
+
+In addition to loading global code, if you're interested in doing things 
+"the right way", you can also add your Lua modules as libraries by placing 
+your code under ```lib/library.lua```, or ```lib/library/library.lua```. 
+
+This makes it possible for the functions (or other libraries) that need your 
+code to run ```require("library")``` to access the code via your public 
+methods.
+ 
+Check for examples on this in the ```lua/lib/``` -directory. 
+
 There are some pre-existing features that can be integrated easily from the 
-Lua code files to chat functions.
+Lua libraries to chat functions.
 
 *Wheel of fortune*
 ```
@@ -127,6 +140,11 @@ Lua code files to chat functions.
 !def --user_level=user highscores local spin = require("spin"); return
  spin.highscores()
 ```
+
+Usage in chat after that is quite simple:
+
+> !spin
+> !highscores
 
 
 Getting an OAuth token for Twitch chat IRC access
