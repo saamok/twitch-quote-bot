@@ -1,11 +1,31 @@
+--[==[
+
+Wheel of fortune functions for the bot.
+
+To use these, you need to define two custom commands.
+Assuming you're using the default command prefix (!) you can do this with:
+
+!def -ul=user -w spin local spin = require('spin'); return spin.spin(user)
+!def -ul=user highscores local spin = require('spin'); return spin.highscores()
+
+--]==]
+
 local datasource = require("datasource")
 
 local spin_data = {}
+local highscores = {}
+local spin = {}
 
 --- Save the current spin results to persistent storage
 --
 function _save_spin_data()
     datasource.set("spin_data", spin_data)
+end
+
+--- Save the current highscores to persistent storage
+--
+function _save_highscore_data()
+    datasource.set("spin_highscores", highscores)
 end
 
 --- Get a new result for a spin
@@ -44,6 +64,40 @@ function _save_spin(user, value)
     spin_data[user]["last_spin_time"] = os.time()
 
     _save_spin_data()
+    _save_highscore(user, value)
+end
+
+--- Update highscores, taking this user's latest total in consideration
+-- @param user
+-- @param value
+--
+function _save_highscore(user, value)
+    local tmp_scores = {}
+
+    score = {}
+    score.user = user
+    score.value = value
+
+    tmp_scores[1] = score
+
+    for key, value in pairs(highscores) do
+        tmp_scores[key + 1] = value
+    end
+
+    local function compare(left, right)
+        return left.value > right.value
+    end
+
+    table.sort(tmp_scores, compare)
+
+    highscores = {}
+    for key, value in pairs(tmp_scores) do
+        if key <= 3 then
+            highscores[key] = value
+        end
+    end
+
+    _save_highscore_data()
 end
 
 --- Check if enough time has elapsed since the last spin
@@ -59,10 +113,16 @@ end
 --
 function _initialize()
     spin_data = datasource.get("spin_data")
+    highscores = datasource.get("spin_highscores")
 
     if spin_data == nil then
         spin_data = {}
         _save_spin_data()
+    end
+
+    if highscores == nil then
+        highscores = {}
+        _save_highscore_data()
     end
 end
 
@@ -70,7 +130,7 @@ end
 -- @param user Name of the user spinning the wheel
 -- @return A message to be shown on chat
 --
-function spin(user)
+function spin.spin(user)
     local previous = _load_spin(user)
 
     local wait_time = _get_wait_time(previous["last_spin_time"])
@@ -89,6 +149,21 @@ function spin(user)
 
     return user .. ", the wheel of fortune has granted you " .. new_spin ..
             " point(s)! You now have a total of " .. new_total .. " point(s)."
+end
+
+--- Show the current spin highscores
+-- @return A message to be shown on chat
+--
+function spin.highscores()
+    local scores = {}
+    for key, item in pairs(highscores) do
+        scores[key] = item.user .. " with " .. item.value .. " point(s)"
+    end
+
+    local message = "The current highscores for the wheel of fortune: " ..
+            table.concat(scores, ", ")
+
+    return message
 end
 
 _initialize()

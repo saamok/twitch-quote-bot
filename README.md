@@ -113,7 +113,9 @@ Lua code files to chat functions.
 *Wheel of fortune*
 ```
 !def --want_user --user_level=user spin local spin = require("spin"); return
- spin(user)
+ spin.spin(user)
+!def --user_level=user highscores local spin = require("spin"); return
+ spin.highscores()
 ```
 
 
