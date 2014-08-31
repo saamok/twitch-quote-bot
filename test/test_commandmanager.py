@@ -4,7 +4,7 @@ from unittest import TestCase
 
 class FakeBot(object):
     settings = None
-    def set_command(self, channel, name, user_level, code):
+    def set_command(self, channel, command, want_user, user_level, code):
         pass
 
 
