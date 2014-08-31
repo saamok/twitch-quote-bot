@@ -23,23 +23,33 @@ Optional:
 * virtualenv
 * virtualenvwrapper
 
-How to install prerequisites in ubuntu:
-    sudo apt-get install python-pip lua5.1 liblua5.1-dev
-    sudo pip install virtualenv
-    sudo pip install virtualenvwrapper
+How to install prerequisites in Ubuntu:
+```
+sudo apt-get install python-pip lua5.1 liblua5.1-dev
+sudo pip install virtualenv virtualenvwrapper
+```
 
+And on RHEL/CentOS/Fedora/similar:
+```
+yum install python-setuptools python-pip python-devel lua lua-devel
+pip install virtualenv virtualenvwrapper
+```
 
 Setup
 =====
 
  1. Get the code from GitHub.
  1. (Optional) Create virtualenv
+    ```
     source $(which virtualenvwrapper.sh)
     mkvirtualenv virtualenv
     # In the future, instead run: ```workon virtualenv```
+    ```
  1. Install dependencies
+    ```
     pip install -r requirements.txt
     # You might have to prepend sudo if not using virtualenv
+    ```
  1. Copy settings.example.py to settings.py, and edit to needs
  1. Run the bot: ```python -m bot```
     For Python 2.6 you'll have to use ```python -m bot.__main__```
