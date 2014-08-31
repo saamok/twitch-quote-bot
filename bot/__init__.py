@@ -1,1 +1,3 @@
-__author__ = 'lietu'
+"""
+The twitch bot core package
+"""

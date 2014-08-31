@@ -1,10 +1,16 @@
+"""
+Database abstraction layer
+"""
+
 from peewee import SqliteDatabase, Model, CharField, IntegerField, \
     BooleanField, TextField
 from peewee import fn
 
 
 class Database(object):
-    """Simple database layer that provides channel specific models"""
+    """
+    Simple database layer that provides channel specific peewee models
+    """
 
     def __init__(self, settings):
         self.settings = settings
@@ -13,6 +19,7 @@ class Database(object):
     def get_models(self, channel):
         """
         Get channel specific data models
+
         :param channel: Name of the channel
         :return: Dict with models
         """
@@ -54,7 +61,11 @@ class Database(object):
 
             @staticmethod
             def get_random_quote():
-                """Get a random quote from the DB"""
+                """
+                Get a random quote from the DB
+
+                :return: Quote ID and text, or None, None
+                """
 
                 quote = Quotes.select().order_by(fn.Random()).limit(1).first()
 
@@ -79,7 +90,11 @@ class Database(object):
         return model_map
 
     def _get_db(self):
-        """Get a database connection, initialize it if not done so yet"""
+        """
+        Get a database connection, initialize it if not done so yet
+
+        :return: SqliteDatabase instance
+        """
 
         if not self.db:
             self.db = SqliteDatabase(self.settings.DATABASE_PATH)
@@ -88,6 +103,11 @@ class Database(object):
         return self.db
 
     def _clean_channel(self, channel):
-        """Clean a channel name for use in table names"""
+        """
+        Clean a channel name for use in table names
+
+        :param channel: The channel name
+        :return: A safe name
+        """
 
         return channel.replace("#", "_")

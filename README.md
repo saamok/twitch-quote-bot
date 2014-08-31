@@ -190,6 +190,19 @@ files in it's search for valid tests:
 nosetests --exe
 ```
 
+Code documentation
+==================
+
+You can generate HTML code documentation from the source code with Sphinx by
+going to the docs/ folder and telling Sphinx to rebuild the HTML and run the
+doctest tests embedded in the source at the same time:
+```
+make html doctests
+```
+
+On the Vagrant VM be sure to have activated the development virtualenv and 
+run the command in ```/src/docs```
+
 
 Salt Stack
 ==========

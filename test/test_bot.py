@@ -2,6 +2,7 @@ import logging
 import inspect
 import os
 import errno
+from mock import Mock
 from unittest import TestCase
 from bot.bot import Bot
 
@@ -102,6 +103,30 @@ class BotTest(TestCase):
         data = bot._load_channel_data("#tmp")
 
         assert data["test"]["key1"] == "value1"
+
+    def test__is_allowed_to_run_command(self):
+        bot = Bot()
+
+        bot._get_user_level = Mock(return_value="user")
+        assert bot._is_allowed_to_run_command("#a", "a", "addquote") is False
+        assert bot._is_allowed_to_run_command("#a", "a", "delquote") is False
+        assert bot._is_allowed_to_run_command("#a", "a", "quote") is False
+        assert bot._is_allowed_to_run_command("#a", "a", "reg") is False
+        assert bot._is_allowed_to_run_command("#a", "a", "def") is False
+
+        bot._get_user_level = Mock(return_value="reg")
+        assert bot._is_allowed_to_run_command("#a", "a", "addquote") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "delquote") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "quote") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "reg") is False
+        assert bot._is_allowed_to_run_command("#a", "a", "def") is False
+
+        bot._get_user_level = Mock(return_value="mod")
+        assert bot._is_allowed_to_run_command("#a", "a", "addquote") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "delquote") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "quote") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "reg") is True
+        assert bot._is_allowed_to_run_command("#a", "a", "def") is True
 
     def _delete(self, path):
         """Delete a file"""

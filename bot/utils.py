@@ -3,13 +3,21 @@ import logging
 
 
 def _get_formatter():
-    """Return a nice common log formatter"""
+    """
+    Get a standard log output formatter
+
+    :return: logging.Formatter instance
+    """
 
     return logging.Formatter('%(asctime)s [%(levelname)8s] %(message)s')
 
 
 def _get_log():
-    """Set up a basic logger"""
+    """
+    Set up a basic logger
+
+    :return: logging.Logger instance
+    """
 
     logger = logging.getLogger('TwitchBot')
     logger.setLevel(logging.CRITICAL)
@@ -29,7 +37,12 @@ log = _get_log()
 
 
 def set_log_file(log_file):
-    """Configure the logger above to log to a file"""
+    """
+    Configure the logger to save the log contents to a file
+
+    :param log_file: Path to the log file
+    :return: None
+    """
 
     fh = logging.FileHandler(log_file)
 
@@ -39,6 +52,19 @@ def set_log_file(log_file):
     log.addHandler(fh)
 
 def human_readable_time(seconds):
+    """
+    Returns the given number of seconds as human readable time
+
+    >>> from bot.utils import human_readable_time
+    >>> human_readable_time(60)
+    '1 minute(s)'
+    >>> human_readable_time((3600 * 2) + (60 * 2) + 2)
+    '2 hour(s) 2 minute(s) 2 second(s)'
+
+    :param seconds: The number of seconds
+    :return: The human readable text
+    """
+
     units = [
         ("year(s)", 60 * 60 * 24 * 365),
         ("month(s)", 60 * 60 * 24 * 30),
@@ -50,6 +76,7 @@ def human_readable_time(seconds):
     ]
 
     values = []
+    seconds = int(seconds)
 
     for key, unit_seconds in units:
         unit_count = int(floor(seconds / unit_seconds))

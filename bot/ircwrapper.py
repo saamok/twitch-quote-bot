@@ -1,3 +1,7 @@
+"""
+Handle the IRC connection for the bot
+"""
+
 try:
     from queue import Queue
 except ImportError:
@@ -9,13 +13,18 @@ from time import sleep
 
 
 class Task(object):
+    """
+    Container for a IRCWrapper task that can be passed through the Queue
+    between threads
+    """
+
     def __init__(self, method, *args, **kwargs):
         self.method = method
         self.args = args
         self.kwargs = kwargs
 
     def __str__(self):
-        return "<Task for method {0} with {1} args and {2} kwargs>".format(
+        return "<Task:(method={0},{1} args,{2} kwargs>".format(
             self.method,
             len(self.args),
             len(self.kwargs)
@@ -23,10 +32,12 @@ class Task(object):
 
 
 class IRCWrapper(SingleServerIRCBot):
-    """Convenient wrapper for the irc class methods, rate limits the
-    messages sent to the server to avoid being banned for spamming."""
+    """
+    Convenient wrapper for the irc class methods, rate limits the messages
+    sent to the server to avoid being banned for spamming.
+    """
 
-    def __init__(self, logger, bot=None, channelList=None, nickname=None,
+    def __init__(self, logger=None, bot=None, channelList=None, nickname=None,
                  server=None, password=None,
                  port=6667, commandPrefix='!'):
 
@@ -44,16 +55,19 @@ class IRCWrapper(SingleServerIRCBot):
 
         serverList = []
 
-        if password:
-            self.logger.info("Connecting to {0}:{1} using a password".format(
-                server, port
-            ))
-            serverList.append((server, port, password))
-        else:
-            self.logger.info("Connecting to {0}:{1} with no password".format(
-                server, port
-            ))
-            serverList.append((server, port))
+        if server:
+            if password:
+                self.logger.info(
+                    "Connecting to {0}:{1} using a password".format(
+                        server, port
+                    ))
+                serverList.append((server, port, password))
+            else:
+                self.logger.info(
+                    "Connecting to {0}:{1} with no password".format(
+                        server, port
+                    ))
+                serverList.append((server, port))
 
         super(IRCWrapper, self).__init__(
             server_list=serverList,
@@ -65,18 +79,33 @@ class IRCWrapper(SingleServerIRCBot):
     # Public API
 
     def start(self):
-        """Start the IRC connection and thread"""
+        """
+        Start the IRC connection and thread
+
+        :return: None
+        """
 
         self._start_thread()
         super(IRCWrapper, self).start()
 
     def stop(self):
-        """Stop our threads etc."""
+        """
+        Stop our threads etc.
+
+        :return: None
+        """
 
         self.queue.put(None)
 
     def message(self, channel, message):
-        """Request to send a message to the channel"""
+        """
+        Request to send a message to the channel, request is placed in output
+        buffering task queue.
+
+        :param channel: The channel to send the message to
+        :param message: The message to be sent
+        :return: None
+        """
 
         self.queue.put(Task(
             "_send_message",
@@ -85,16 +114,32 @@ class IRCWrapper(SingleServerIRCBot):
         ))
 
     def is_oper(self, channel, nick):
-        """Check if the user is an operator/moderator in the channel"""
+        """
+        Check if the user is an operator/moderator in the channel
+
+        :param channel: Which channel
+        :param nick: What is the user's nick
+        :return:
+        """
 
         return self.channels[channel].is_oper(nick)
 
-    # "Private" methods
-
     def _start_thread(self):
-        """Start a thread that will work on the tasks"""
+        """
+        Start a thread that will work on the tasks while preventing us from
+        getting banned on Twitch servers etc.
+
+        :return: None
+        """
 
         def worker():
+            """
+            The thread's main function, will loop until a None -object is
+            pushed to the task queue.
+
+            :return: None
+            """
+
             while True:
                 task = self.queue.get()
 
@@ -109,7 +154,12 @@ class IRCWrapper(SingleServerIRCBot):
         self.thread.start()
 
     def _process_task(self, task):
-        """Process a single Task object"""
+        """
+        Process a single Task
+
+        :param task: An instance of the Task class
+        :return: None
+        """
 
         method = getattr(self, task.method)
         if not method:
@@ -120,7 +170,13 @@ class IRCWrapper(SingleServerIRCBot):
         method(*task.args, **task.kwargs)
 
     def _send_message(self, channel, message):
-        """Actually send a message on a channel"""
+        """
+        Actually send a message on a channel
+
+        :param channel: The channel to send the message to
+        :param message: The message to be sent
+        :return: None
+        """
 
         self.logger.info("Delivering message to {0}: {1}".format(
             channel, message
@@ -128,14 +184,27 @@ class IRCWrapper(SingleServerIRCBot):
         self.connection.privmsg(channel, message)
 
     def on_disconnect(self, connection, event):
-        """Event handler for being disconnected from the server"""
+        """
+        Event handler run when the bot is disconnected from the server
+
+        :param connection: The irc connection object
+        :param event: An event containing more relevant info
+        :return: None
+        """
 
         self.logger.warn("Got disconnected from server: {0}".format(
             repr(event)
         ))
 
     def on_welcome(self, connection, event):
-        """Event handler for when we connect to the server"""
+        """
+        Event handler run after connection to server has been established,
+        joins the channels the bot should be on.
+
+        :param connection: The irc connection object
+        :param event: An event containing more relevant info
+        :return: None
+        """
 
         self.logger.info("Connected to server, joining channels...")
 
@@ -144,41 +213,84 @@ class IRCWrapper(SingleServerIRCBot):
             connection.join(channel)
 
     def on_join(self, connection, event):
-        """Event handler for when we join a channel"""
+        """
+        Event handler run when the bot joins a channel, and in case of
+        Twitch for some other unknown reason(s) as well.
 
-        channel = self._get_channel(event)
+        :param connection: The irc connection object
+        :param event: An event containing more relevant info
+        :return: None
+        """
+
+        channel = self._get_event_channel(event)
         self.logger.info("Joined {0}".format(channel))
 
     def on_pubmsg(self, connection, event):
-        """Event handler for when there is a message on any channel"""
+        """
+        Event handler run when the bot seems a new message on any channel
 
-        text = self._get_text(event)
-        channel = self._get_channel(event)
+        :param connection: The irc connection object
+        :param event: An event containing more relevant info
+        :return: None
+        """
+
+        text = self._get_event_text(event)
+        channel = self._get_event_channel(event)
 
         command, args = self._get_command(text)
 
         if command:
-            nick = self._get_nick(event)
+            nick = self._get_event_nick(event)
 
             self.bot.irc_command(channel, nick, command, args)
 
-    def _get_channel(self, event):
-        """Get the channel the event occurred on"""
+    def _get_event_channel(self, event):
+        """
+        Extract the channel name from the given event
+
+        :param event: An event object
+        :return: The channel name the event occured on
+        """
 
         return event.target
 
-    def _get_text(self, event):
-        """Get the message text from an event"""
+    def _get_event_text(self, event):
+        """
+        Extract the message text from a message event
+
+        :param event: A message event
+        :return: The message text
+        """
 
         return event.arguments[0]
 
-    def _get_nick(self, event):
-        """Get the nickname that created this event"""
+    def _get_event_nick(self, event):
+        """
+        Get the nick for the user that triggered this message event
+
+        :param event: A message event
+        :return: The user's nick
+        """
 
         return event.source.nick
 
     def _get_command(self, text):
-        """Get the command from a line of text"""
+        """
+        Extract any command on the given chat line
+
+        >>> from bot.ircwrapper import IRCWrapper
+        >>> i = IRCWrapper()
+        >>> i._get_command("!def")
+        ('def', [])
+        >>> i._get_command("!foo bar")
+        ('foo', ['bar'])
+        >>> i._get_command("abc 123")
+        (None, 'abc 123')
+
+        :param text: A line of text from the chat
+        :return: Command name and remainder text, or if no command found
+                 None, original text
+        """
 
         if not text.startswith(self.commandPrefix):
             return None, text
