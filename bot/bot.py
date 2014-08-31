@@ -69,13 +69,13 @@ class Bot(object):
                 return
 
             if command == "addquote":
-                self._add_quote(nick, channel, args)
+                self._add_quote(channel, nick, args)
             elif command == "delquote":
-                self._del_quote(nick, channel, args)
+                self._del_quote(channel, nick, args)
             elif command == "quote":
-                self._show_quote(nick, channel, args)
+                self._show_quote(channel, nick, args)
             elif command == "reg":
-                self._manage_regulars(nick, channel, args)
+                self._manage_regulars(channel, nick, args)
             elif command == "def":
                 cm = self.command_managers[channel]
                 command, user_level = cm.add_command(args)
@@ -186,7 +186,7 @@ class Bot(object):
 
         self._message(channel, result)
 
-    def _manage_regulars(self, nick, channel, args):
+    def _manage_regulars(self, channel, nick, args):
         """Manage regulars for a channel"""
 
         ok = True
@@ -237,7 +237,7 @@ class Bot(object):
             message = "{0}, Removed regular: {1}"
             self._message(channel, message.format(nick, regular))
 
-    def _show_quote(self, nick, channel, args):
+    def _show_quote(self, channel, nick, args):
         """Show a quote on channel"""
 
         model = self._get_model(channel, "quotes")
@@ -255,7 +255,7 @@ class Bot(object):
 
             self.logger.info("No quotes for channel {0}".format(channel))
 
-    def _add_quote(self, nick, channel, args):
+    def _add_quote(self, channel, nick, args):
         """Add a quote to the database"""
 
         quote_text = " ".join(args)
@@ -277,7 +277,7 @@ class Bot(object):
 
         self.logger.info("Added quote for {0}: {1}".format(channel, quote))
 
-    def _del_quote(self, nick, channel, args):
+    def _del_quote(self, channel, nick, args):
         """Remove a quote from the database"""
 
         if len(args) == 0:

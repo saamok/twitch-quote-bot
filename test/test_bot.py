@@ -52,7 +52,7 @@ class BotTest(TestCase):
 
         bot = Bot(settings, FakeWrapper, logger=nullLogger)
         bot._initialize_models()
-        bot._add_quote("foobar", "#tmp", ["test"])
+        bot._add_quote("#tmp", "foobar", ["test"])
         quote_id, quote = bot._get_model("#tmp", "quotes").get_random_quote()
 
         assert str(quote) == "test"
@@ -66,9 +66,9 @@ class BotTest(TestCase):
 
         bot = Bot(settings, FakeWrapper, logger=nullLogger)
         bot._initialize_models()
-        bot._add_quote("foobar", "#tmp", ["test"])
-        bot._add_quote("foobar", "#tmp", ["test2"])
-        bot._del_quote("foobar", "#tmp", [1])
+        bot._add_quote("#tmp", "foobar", ["test"])
+        bot._add_quote("#tmp", "foobar", ["test2"])
+        bot._del_quote("#tmp", "foobar", [1])
 
         quote_id, quote = bot._get_model("#tmp", "quotes").get_random_quote()
 
