@@ -142,9 +142,10 @@ Lua libraries to chat functions.
 ```
 
 Usage in chat after that is quite simple:
-
-> !spin
-> !highscores
+```
+!spin
+!highscores
+```
 
 
 Getting an OAuth token for Twitch chat IRC access
