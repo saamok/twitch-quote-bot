@@ -16,7 +16,8 @@ local datasource = {}
 -- @return The stored data
 function datasource.get(key)
     local json_data = _G["datasource"].get(key)
-    return json.decode(json_data)
+    local value, position, error = json.decode(json_data)
+    return value
 end
 
 --- Set a value to the persistent data source
