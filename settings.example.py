@@ -37,6 +37,10 @@ SPIN_TIMEOUT = 3600
 # A glob pattern for including Lua code with
 LUA_INCLUDE_GLOB = "lua/*.lua"
 
+# LUA_PATH environment variable, where Lua will look for files that are
+# require()d
+LUA_PATH = "lua/lib/?.lua;lua/lib/?/?.lua"
+
 # ----- --------- -----
 # ----- Internals -----
 # ----- --------- -----

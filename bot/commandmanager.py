@@ -1,4 +1,3 @@
-from time import time
 from .utils import human_readable_time
 import lupa
 import argparse
@@ -17,11 +16,14 @@ class DataSource(object):
         self.bot = bot
         self.data = data
 
-    def __getitem__(self, item):
-        return self.__dict__["data"][item]
+    def get(self, key):
+        if not key in self.data:
+            return "null"
 
-    def __setitem__(self, key, value):
-        self.__dict__["data"][key] = value
+        return self.data[key]
+
+    def set(self, key, value):
+        self.data[key] = value
         self.bot.update_global_value(self.channel, key, value)
 
 
@@ -66,9 +68,8 @@ class CommandManager(object):
         """Load a previously persisted command"""
 
         if self.logger:
-            self.logger.debug("Loading command {0} with user level {1} and "
-                              "code: {2}".format(
-                command, user_level, code
+            self.logger.debug("Loading command {0} with user level {1}".format(
+                command, user_level
             ))
 
         self.commands[command] = {
@@ -169,6 +170,10 @@ class CommandManager(object):
             end
         """)
 
+        def log(message):
+            self.logger.debug("Lua: " + str(message))
+
+        injector("log", log)
         injector("datasource", self.datasource)
         injector("human_readable_time", human_readable_time)
         injector("settings", self.bot.settings)

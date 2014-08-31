@@ -107,6 +107,15 @@ And then just call it via the newly created custom command:
 !sum 1 2 3
 ```
 
+There are some pre-existing features that can be integrated easily from the 
+Lua code files to chat functions.
+
+*Wheel of fortune*
+```
+!def --want_user --user_level=user spin local spin = require("spin"); return
+ spin(user)
+```
+
 
 Getting an OAuth token for Twitch chat IRC access
 =================================================
@@ -195,3 +204,4 @@ vagrant provision
 
 Also if you pull changes from GitHub, you should probably run that command 
 before trying to continue using the VM.
+
