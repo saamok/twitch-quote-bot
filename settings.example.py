@@ -34,7 +34,9 @@ SPIN_MAX = 250
 # How many seconds do users need to wait between spins? 3600 = 1 hour
 SPIN_TIMEOUT = 3600
 
-# A glob pattern for including Lua code with
+# A glob pattern for including Lua code with, the code will be included
+# globally, for most cases you probably want to use library pattern and
+# store your files in the locations specified in LUA_PATH
 LUA_INCLUDE_GLOB = "lua/*.lua"
 
 # LUA_PATH environment variable, where Lua will look for files that are
@@ -54,6 +56,7 @@ OWNER_USERS = [
 # You probably don't need to touch these settings
 
 # How many seconds the IRC layer will wait between processing outgoing
-# commands
+# commands, set this too low and Twitch can globally ban you or drop your
+# messages, set it too high and the bot will seem seriously laggy.
 QUEUE_DELAY = 2.5
 
