@@ -77,8 +77,9 @@ function spin(user)
 
     if wait_time > 0 then
         time_text = _G["human_readable_time"](wait_time)
-        return user .. ", whoah, wait a " .. time_text .. " before trying " ..
-                "that again..."
+        return user .. ", you still need to wait " .. time_text ..
+                " before spinning again. You currently have " ..
+                previous["value"] .. " point(s)."
     end
 
     local new_spin = _get_spin()
