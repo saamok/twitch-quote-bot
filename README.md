@@ -31,7 +31,10 @@ sudo pip install virtualenv virtualenvwrapper
 
 And on RHEL/CentOS/Fedora/similar:
 ```
-yum install python-setuptools python-pip python-devel lua lua-devel
+# Enable EPEL repos for python-pip, for CentOS 6
+rpm -Uvh http://ftp.linux.ncsu.edu/pub/epel/6/i386/epel-release-6-8.noarch.rpm
+
+yum -y install python-setuptools python-pip python-devel lua lua-devel gcc
 pip install virtualenv virtualenvwrapper
 ```
 
