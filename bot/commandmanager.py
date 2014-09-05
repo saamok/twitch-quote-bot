@@ -5,6 +5,7 @@ Module for handling the custom Lua commands for the bot
 from .utils import human_readable_time
 from .http import Http, TupleData
 from .timer import Interval, Delayed
+from .chat import Chat
 import lupa
 import argparse
 import sys
@@ -357,6 +358,7 @@ class CommandManager(object):
         injector("datasource", self.datasource)
         injector("human_readable_time", human_readable_time)
         injector("settings", self.bot.settings)
+        injector("Chat", Chat(self.bot, self.channel))
         injector("Http", Http())
         injector("TupleData", TupleData)
         injector("Interval", interval)

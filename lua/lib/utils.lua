@@ -98,4 +98,19 @@ function utils.interval(seconds, callback)
     return stop
 end
 
+--- Convert a Python list to a Lua table
+-- @param list
+-- @return The Lua table
+function utils.list_to_lua(list)
+    local result = {}
+    local i = 1
+
+    for item in python.iter(list) do
+        result[i] = item
+        i = i + 1
+    end
+
+    return result
+end
+
 return utils

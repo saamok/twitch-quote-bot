@@ -124,6 +124,16 @@ class IRCWrapper(SingleServerIRCBot):
 
         return self.channels[channel].is_oper(nick)
 
+    def get_users(self, channel):
+        """
+        Get the users currently in the given channel
+
+        :param channel: Which channel
+        :return:
+        """
+
+        return self.channels[channel].users()
+
     def _start_thread(self):
         """
         Start a thread that will work on the tasks while preventing us from
