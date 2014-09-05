@@ -127,9 +127,10 @@ class CommandManager(object):
     end
     """
 
-    def __init__(self, channel, bot, data=None, logger=None):
+    def __init__(self, channel, bot, settings=None, data=None, logger=None):
         self.channel = channel
         self.bot = bot
+        self.settings = settings
         self.logger = logger
         self.commands = {}
         self.timers = []
@@ -357,7 +358,7 @@ class CommandManager(object):
         injector("log", log)
         injector("datasource", self.datasource)
         injector("human_readable_time", human_readable_time)
-        injector("settings", self.bot.settings)
+        injector("settings", self.settings)
         injector("Chat", Chat(self.bot, self.channel))
         injector("Http", Http())
         injector("TupleData", TupleData)

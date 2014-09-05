@@ -1,3 +1,10 @@
+from multiprocessing import Queue as MPQueue
+
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
+
 from math import floor
 import logging
 
@@ -89,3 +96,117 @@ def human_readable_time(seconds):
     output = " ".join(values)
 
     return output
+
+
+class CallData(object):
+    """Describes a method call so it can be replicated"""
+
+    def __init__(self, method, *args, **kwargs):
+        self.method = method
+        self.args = args
+        self.kwargs = kwargs
+
+
+class CallRelay(object):
+
+    def __init__(self, logger=None, in_queue=None, out_queue=None):
+        self.logger = logger
+        self.in_queue = in_queue
+        self.out_queue = out_queue
+
+        self.call_object = None
+
+    def set_call_object(self, call_object):
+        if self.logger:
+            self.logger.debug("Updated call object to {0}".format(
+                type(call_object)
+            ))
+        self.call_object = call_object
+
+    def stop(self):
+        if self.logger:
+            self.logger.debug("Stopping ChannelCall to {0}".format(
+                type(self.call_object)
+            ))
+        self.in_queue.put(None)
+
+    def _create_call_handler(self, name):
+        def _handler(*args, **kwargs):
+            if self.logger:
+                self.logger.debug("ChannelCall call to {0}.{1}".format(
+                    type(self.call_object),
+                    name
+                ))
+            self.in_queue.put(CallData(name, *args, **kwargs))
+            response = self.out_queue.get()
+            if self.logger:
+                self.logger.debug("ChannelCall response from {0}.{1}".format(
+                    type(self.call_object),
+                    name
+                ))
+
+            return response
+
+        _handler.__name__ = name
+        return _handler
+
+    def __getattr__(self, name):
+        return self._create_call_handler(name)
+
+    def loop(self):
+        while True:
+            if self.logger:
+                self.logger.debug("ChannelCall waiting for calls to {"
+                                  "0}".format(
+                    type(self.call_object)
+                ))
+
+            call = self.in_queue.get()
+
+            if self.logger:
+                self.logger.debug("ChannelCall for {0} got call".format(
+                    type(self.call_object)
+                ))
+
+            # Magic message telling us to stop
+            if call is None:
+                if self.logger:
+                    self.logger.debug("ChannelCall for {0} stopping".format(
+                        type(self.call_object)
+                    ))
+                break
+
+            if self.logger:
+                self.logger.debug("ChannelCall calling {0}.{1}".format(
+                    type(self.call_object),
+                    call.method
+                ))
+
+            method = getattr(self.call_object, call.method)
+            result = method(*call.args, **call.kwargs)
+
+            if self.logger:
+                self.logger.debug("ChannelCall returning {0}.{1} "
+                                  "response".format(
+                    type(self.call_object),
+                    call.method
+                ))
+
+            self.out_queue.put(result)
+
+
+class ProcessCallRelay(CallRelay):
+    def __init__(self, logger=None):
+        in_queue = MPQueue()
+        out_queue = MPQueue()
+
+        super(ProcessCallRelay, self).__init__(logger, in_queue, out_queue)
+
+
+class ThreadCallRelay(CallRelay):
+    def __init__(self, logger=None):
+        in_queue = Queue()
+        out_queue = Queue()
+
+        super(ThreadCallRelay, self).__init__(logger, in_queue, out_queue)
+

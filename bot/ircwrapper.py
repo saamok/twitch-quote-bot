@@ -37,7 +37,8 @@ class IRCWrapper(SingleServerIRCBot):
     sent to the server to avoid being banned for spamming.
     """
 
-    def __init__(self, logger=None, bot=None, channelList=None, nickname=None,
+    def __init__(self, logger=None, bot=None, settings=None, channelList=None,
+                 nickname=None,
                  server=None, password=None,
                  port=6667, commandPrefix='!'):
 
@@ -46,10 +47,13 @@ class IRCWrapper(SingleServerIRCBot):
         self.channelList = channelList
         self.commandPrefix = commandPrefix
         self.queue = Queue()
-        self.thread = None
+        self.irc_thread = None
+        self.call_thread = None
+        self.out_thread = None
+        self.call_relay = None
 
         if bot:
-            self.queue_delay = bot.settings.QUEUE_DELAY
+            self.queue_delay = settings.QUEUE_DELAY
         else:
             self.queue_delay = 1
 
@@ -78,6 +82,17 @@ class IRCWrapper(SingleServerIRCBot):
 
     # Public API
 
+    def set_call_relay(self, call_relay):
+        self.call_relay = call_relay
+
+        def call_relay_loop():
+            if self.call_relay:
+                self.call_relay.loop()
+
+        self.call_thread = Thread(target=call_relay_loop)
+        self.call_thread.daemon = True
+        self.call_thread.start()
+
     def start(self):
         """
         Start the IRC connection and thread
@@ -85,8 +100,7 @@ class IRCWrapper(SingleServerIRCBot):
         :return: None
         """
 
-        self._start_thread()
-        super(IRCWrapper, self).start()
+        self._start_threads()
 
     def stop(self):
         """
@@ -96,6 +110,7 @@ class IRCWrapper(SingleServerIRCBot):
         """
 
         self.queue.put(None)
+        self.call_relay.stop()
 
     def message(self, channel, message):
         """
@@ -134,7 +149,7 @@ class IRCWrapper(SingleServerIRCBot):
 
         return self.channels[channel].users()
 
-    def _start_thread(self):
+    def _start_threads(self):
         """
         Start a thread that will work on the tasks while preventing us from
         getting banned on Twitch servers etc.
@@ -143,13 +158,6 @@ class IRCWrapper(SingleServerIRCBot):
         """
 
         def worker():
-            """
-            The thread's main function, will loop until a None -object is
-            pushed to the task queue.
-
-            :return: None
-            """
-
             while True:
                 task = self.queue.get()
 
@@ -159,9 +167,16 @@ class IRCWrapper(SingleServerIRCBot):
                 self._process_task(task)
                 sleep(self.queue_delay)
 
-        self.thread = Thread(target=worker)
-        self.thread.daemon = True
-        self.thread.start()
+        self.out_thread = Thread(target=worker)
+        self.out_thread.daemon = True
+        self.out_thread.start()
+
+        def irc():
+            super(IRCWrapper, self).start()
+
+        self.irc_thread = Thread(target=irc)
+        self.irc_thread.daemon = True
+        self.irc_thread.start()
 
     def _process_task(self, task):
         """

@@ -7,20 +7,23 @@ import json
 from lupa import LuaError
 from .commandmanager import CommandManager, CommandPermissionError
 from .database import Database
+from .utils import ThreadCallRelay
 
 
 class Bot(object):
     """A bot instance"""
 
-    def __init__(self, settings=None, wrapper_class=None, logger=None):
+    def __init__(self, settings=None, wrapper=None, irc_wrapper=None,
+                 logger=None, wrap_irc=True):
         self.settings = settings
-
+        self.wrapper = wrapper
         self.logger = logger
 
-        if wrapper_class:
-            self.ircWrapper = wrapper_class(
+        if irc_wrapper:
+            iw = irc_wrapper(
                 logger,
-                self,
+                self.wrapper,
+                settings,
                 settings.CHANNEL_LIST,
                 settings.USER,
                 settings.HOST,
@@ -28,22 +31,19 @@ class Bot(object):
                 settings.PORT,
                 settings.COMMAND_PREFIX
             )
+
+            if wrap_irc:
+                self.ircWrapper = ThreadCallRelay()
+                self.ircWrapper.set_call_object(iw)
+                iw.set_call_relay(self.ircWrapper)
+            else:
+                self.ircWrapper = iw
         else:
             self.ircWrapper = None
 
         self.command_managers = {}
         self.channel_models = {}
         self.db = None
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *err):
-        if self.ircWrapper:
-            self.ircWrapper.stop()
-
-        for key in self.command_managers:
-            self.command_managers[key].stop_timers()
 
     #
     # Public API
@@ -63,6 +63,42 @@ class Bot(object):
 
         self.logger.info("Starting IRC connection")
         self.ircWrapper.start()
+
+        # Run until we want to exit
+        self.wrapper.loop()
+
+        self._stop()
+
+    def _stop(self):
+        """
+        Stop everything we're doing
+
+        :return:
+        """
+        if self.ircWrapper:
+            self.ircWrapper.stop()
+
+        for key in self.command_managers:
+            self.command_managers[key].stop_timers()
+
+
+    def get_settings(self):
+        """
+        Get the bot settings, needed due to ThreadCallRelay
+
+        :return:
+        """
+
+        return self.settings
+
+    def get_irc(self):
+        """
+        Get the IRC wrapper object
+
+        :return:
+        """
+
+        return self.ircWrapper
 
     def irc_command(self, channel, nick, command, args):
         """
@@ -556,7 +592,8 @@ class Bot(object):
             channel_data = self._load_channel_data(channel)
             cm = CommandManager(
                 channel,
-                self,
+                self.wrapper,
+                self.settings,
                 channel_data,
                 self.logger
             )

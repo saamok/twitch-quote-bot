@@ -58,14 +58,13 @@ class IRCWrapperTest(TestCase):
 
         class FakeBot(object):
             data = None
-            settings = FakeSettings()
 
             def irc_command(self, *args):
                 self.data = args
 
         bot = FakeBot()
 
-        tmp = IRCWrapper(nullLogger, bot)
+        tmp = IRCWrapper(nullLogger, bot, FakeSettings())
         tmp.on_pubmsg(None, Event(
             "#tmp",
             "foobar",
@@ -89,7 +88,9 @@ class IRCWrapperTest(TestCase):
 
         self.assertEqual(bot.data, expected)
 
-        tmp = IRCWrapper(nullLogger, bot, commandPrefix="Hello, world!")
+        tmp = IRCWrapper(
+            nullLogger, bot, FakeSettings(), commandPrefix="Hello, world!"
+        )
         tmp.on_pubmsg(None, Event(
             "#tmp",
             "foobar",

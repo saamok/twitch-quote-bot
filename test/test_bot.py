@@ -27,6 +27,9 @@ class FakeWrapper(object):
     def message(self, *args):
         pass
 
+    def set_call_relay(self, call_relay):
+        pass
+
 
 class Settings(object):
     CHANNEL_LIST = ["#tmp"]
@@ -51,7 +54,8 @@ class BotTest(TestCase):
         settings = Settings()
         settings.DATABASE_PATH = dbPath
 
-        bot = Bot(settings, FakeWrapper, logger=nullLogger)
+        bot = Bot(settings, None, FakeWrapper, logger=nullLogger,
+                  wrap_irc=False)
         bot._initialize_models()
         bot._add_quote("#tmp", "foobar", ["test"])
         quote_id, quote = bot._get_model("#tmp", "quotes").get_random_quote()
@@ -65,7 +69,7 @@ class BotTest(TestCase):
         settings = Settings()
         settings.DATABASE_PATH = dbPath
 
-        bot = Bot(settings, FakeWrapper, logger=nullLogger)
+        bot = Bot(settings, None, FakeWrapper, logger=nullLogger, wrap_irc=False)
         bot._initialize_models()
         bot._add_quote("#tmp", "foobar", ["test"])
         bot._add_quote("#tmp", "foobar", ["test2"])
@@ -82,7 +86,7 @@ class BotTest(TestCase):
         settings = Settings()
         settings.DATABASE_PATH = dbPath
 
-        bot = Bot(settings, FakeWrapper, logger=nullLogger)
+        bot = Bot(settings, None, FakeWrapper, logger=nullLogger, wrap_irc=False)
         bot._initialize_models()
         quote_id, quote = bot._get_model("#tmp", "quotes").get_random_quote()
 
@@ -96,7 +100,7 @@ class BotTest(TestCase):
         settings = Settings()
         settings.DATABASE_PATH = dbPath
 
-        bot = Bot(settings, FakeWrapper, logger=nullLogger)
+        bot = Bot(settings, None, FakeWrapper, logger=nullLogger, wrap_irc=False)
         bot._initialize_models()
         bot.update_global_value("#tmp", "test", {"key1": "value1"})
 
