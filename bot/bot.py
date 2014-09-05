@@ -138,7 +138,11 @@ class Bot(object):
                 self._manage_regulars(channel, nick, args)
             elif command == "def":
                 cm = self.command_managers[channel]
-                command, user_level = cm.add_command(args)
+                channel, command, want_user, user_level, code = cm.add_command(
+                    args
+                )
+
+                self.set_command(channel, command, want_user, user_level, code)
 
                 message = "{0}, added command {1} for user level {2}".format(
                     nick, command, user_level

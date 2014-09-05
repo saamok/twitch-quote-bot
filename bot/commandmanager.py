@@ -160,9 +160,7 @@ class CommandManager(object):
 
         command, want_user, user_level, code = self._parse_func(args)
 
-        self.load_command(command, want_user, user_level, code)
-
-        return command, user_level
+        return self.load_command(command, want_user, user_level, code)
 
     def is_valid_command(self, command):
         """
@@ -199,12 +197,9 @@ class CommandManager(object):
             "code": code
         }
 
-        if set:
-            self.bot.set_command(
-                self.channel, command, want_user, user_level, code
-            )
-
         self.load_lua(code)
+
+        return self.channel, command, want_user, user_level, code
 
     def run_command(self, nick, user_level, command, args=None):
         """
