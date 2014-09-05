@@ -1,8 +1,8 @@
-from urllib import urlencode
-
 try:
+    from urllib import urlencode
     from urllib2 import Request, urlopen
 except ImportError:
+    from urllib.parse import urlencode
     from urllib.request import Request, urlopen
 
 
