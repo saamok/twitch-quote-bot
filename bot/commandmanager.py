@@ -4,6 +4,7 @@ Module for handling the custom Lua commands for the bot
 
 from .utils import human_readable_time
 from .http import Http, TupleData
+from .timer import Interval, Delayed
 import lupa
 import argparse
 import sys
@@ -40,7 +41,6 @@ class ArgumentParser(argparse.ArgumentParser):
             exc.argument = self._get_action_from_name(exc.argument_name)
             raise exc
         super(ArgumentParser, self).error(message)
-
 
 
 class CommandPermissionError(BaseException):
@@ -131,10 +131,21 @@ class CommandManager(object):
         self.bot = bot
         self.logger = logger
         self.commands = {}
+        self.timers = []
         self.datasource = DataSource(channel, bot, data)
 
         self.lua = lupa.LuaRuntime(unpack_returned_tuples=False)
         self._inject_globals()
+
+    def stop_timers(self):
+        """
+        Cancel all timers still running
+
+        :return:
+        """
+
+        for timer in self.timers:
+            timer.cancel()
 
     def add_command(self, args):
         """
@@ -332,15 +343,21 @@ class CommandManager(object):
 
             self.logger.debug("Lua: " + str(message))
 
-        # _G["log"]
+        def interval(seconds, function):
+            i = Interval(seconds, function, self.lua)
+            self.timers.append(i)
+            return i
+
+        def delayed(seconds, function):
+            i = Delayed(seconds, function, self.lua)
+            self.timers.append(i)
+            return i
+
         injector("log", log)
-        # _G["datasource"]
         injector("datasource", self.datasource)
-        # _G["human_readable_time"]
         injector("human_readable_time", human_readable_time)
-        # _G["settings"]
         injector("settings", self.bot.settings)
-        # _G["Http"]
         injector("Http", Http())
-        # _G["TupleData"]
         injector("TupleData", TupleData)
+        injector("Interval", interval)
+        injector("Delayed", delayed)

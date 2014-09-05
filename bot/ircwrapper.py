@@ -178,9 +178,6 @@ class IRCWrapper(SingleServerIRCBot):
         :return: None
         """
 
-        self.logger.info("Delivering message to {0}: {1}".format(
-            channel, message
-        ))
         self.connection.privmsg(channel, message)
 
     def on_disconnect(self, connection, event):

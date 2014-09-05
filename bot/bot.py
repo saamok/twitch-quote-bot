@@ -35,9 +35,15 @@ class Bot(object):
         self.channel_models = {}
         self.db = None
 
-    def __del__(self):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *err):
         if self.ircWrapper:
             self.ircWrapper.stop()
+
+        for key in self.command_managers:
+            self.command_managers[key].stop_timers()
 
     #
     # Public API
@@ -283,10 +289,6 @@ class Bot(object):
             result = "{0}, oops, got Lua error: {1}".format(
                 nick, str(e)
             )
-
-        self.logger.debug("Custom command {0} returned {1}".format(
-            command, result
-        ))
 
         self._message(channel, result)
 

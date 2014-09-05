@@ -70,4 +70,32 @@ function utils.limit(values, length)
     return result
 end
 
+--- Call the given function in the given number of seconds (roughly)
+-- @param seconds Number of seconds
+-- @param callback Function to be called
+-- @return The stop() function
+function utils.delayed(seconds, callback)
+    local reference = _G["Delayed"](seconds, callback)
+
+    local stop = function()
+        reference.cancel()
+    end
+
+    return stop
+end
+
+--- Call the given function every X seconds (roughly)
+-- @param seconds Number of seconds
+-- @param callback Function to be called
+-- @return The stop() function
+function utils.interval(seconds, callback)
+    local reference = _G["Interval"](seconds, callback)
+
+    local stop = function()
+        reference.cancel()
+    end
+
+    return stop
+end
+
 return utils

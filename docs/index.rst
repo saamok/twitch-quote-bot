@@ -48,6 +48,11 @@ Bot:
     :undoc-members:
     :private-members:
 
+.. automodule:: bot.timer
+    :members:
+    :undoc-members:
+    :private-members:
+
 
 Indices and tables
 ==================

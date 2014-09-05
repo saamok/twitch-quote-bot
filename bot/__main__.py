@@ -14,5 +14,5 @@ if __name__ == "__main__":
     # Set LUA_PATH environment variable so our Lua code can find the libraries
     os.environ["LUA_PATH"] = settings.LUA_PATH
 
-    bot = Bot(settings, wrapper_class=IRCWrapper, logger=log)
-    bot.run()
+    with Bot(settings, wrapper_class=IRCWrapper, logger=log) as bot:
+        bot.run()
