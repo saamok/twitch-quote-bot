@@ -43,6 +43,11 @@ Bot:
     :undoc-members:
     :private-members:
 
+.. automodule:: bot.http
+    :members:
+    :undoc-members:
+    :private-members:
+
 
 Indices and tables
 ==================

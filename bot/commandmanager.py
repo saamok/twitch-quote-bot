@@ -3,6 +3,7 @@ Module for handling the custom Lua commands for the bot
 """
 
 from .utils import human_readable_time
+from .http import Http, TupleData
 import lupa
 import argparse
 import sys
@@ -339,3 +340,7 @@ class CommandManager(object):
         injector("human_readable_time", human_readable_time)
         # _G["settings"]
         injector("settings", self.bot.settings)
+        # _G["Http"]
+        injector("Http", Http())
+        # _G["TupleData"]
+        injector("TupleData", TupleData)
