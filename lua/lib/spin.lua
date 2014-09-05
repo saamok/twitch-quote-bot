@@ -11,6 +11,7 @@ Assuming you're using the default command prefix (!) you can do this with:
 --]==]
 
 local datasource = require("datasource")
+local utils = require("utils")
 
 local spin_data = {}
 local highscores = {}
@@ -90,25 +91,11 @@ function _save_highscore(user, value)
 
     table.sort(tmp_scores, compare)
 
-    -- Keep track of users already on the highscore list,
-    -- we only want 1 entry per user
-    local users = {}
-    local user = ""
-    local keyadjust = 0
-
-    highscores = {}
-    for key, value in pairs(tmp_scores) do
-        user = value.user
-
-        if users[user] == nil then
-            users[user] = true
-            if key <= 3 then
-                highscores[key + keyadjust] = value
-            end
-        else
-            keyadjust = keyadjust - 1
-        end
-    end
+    local unique = utils.unique(
+        tmp_scores,
+        function (item) return item.user end
+    )
+    highscores = utils.limit(unique, 3)
 
     _save_highscore_data()
 end
