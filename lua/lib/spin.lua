@@ -90,10 +90,23 @@ function _save_highscore(user, value)
 
     table.sort(tmp_scores, compare)
 
+    -- Keep track of users already on the highscore list,
+    -- we only want 1 entry per user
+    local users = {}
+    local user = ""
+    local keyadjust = 0
+
     highscores = {}
     for key, value in pairs(tmp_scores) do
-        if key <= 3 then
-            highscores[key] = value
+        user = value.user
+
+        if users[user] == nil then
+            users[user] = true
+            if key <= 3 then
+                highscores[key + keyadjust] = value
+            end
+        else
+            keyadjust = keyadjust - 1
         end
     end
 
@@ -164,6 +177,12 @@ function spin.highscores()
             table.concat(scores, ", ")
 
     return message
+end
+
+--- Clear any cached values
+--
+function spin.clear_cache()
+    highscores = {}
 end
 
 _initialize()
