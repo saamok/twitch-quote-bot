@@ -320,17 +320,20 @@ class Bot(object):
         user_level = self._get_user_level(channel, nick)
         cm = self.command_managers[channel]
 
+        message = None
+
         try:
-            result = cm.run_command(nick, user_level, command, args)
+            cm.run_command(nick, user_level, command, args)
         except CommandPermissionError:
-            result = "{0}, you don't have permissions to run that " \
+            message = "{0}, you don't have permissions to run that " \
                      "command".format(nick)
         except LuaError as e:
-            result = "{0}, oops, got Lua error: {1}".format(
+            message = "{0}, oops, got Lua error: {1}".format(
                 nick, str(e)
             )
 
-        self._message(channel, result)
+        if message:
+            self._message(channel, message)
 
     def _manage_regulars(self, channel, nick, args):
         """

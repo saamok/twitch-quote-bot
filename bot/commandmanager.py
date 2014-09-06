@@ -2,13 +2,14 @@
 Module for handling the custom Lua commands for the bot
 """
 
+import lupa
+import argparse
+import sys
+from threading import Thread
 from .utils import human_readable_time
 from .http import Http, TupleData
 from .timer import Interval, Delayed
 from .chat import Chat
-import lupa
-import argparse
-import sys
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -123,7 +124,11 @@ class CommandManager(object):
     # Function template for doing Lua function calls
     call_template = """
     function(...)
-        return {func_name}(unpack(arg))
+        local chat = require("chat")
+        local retval = {func_name}(unpack(arg))
+        if retval ~= nil then
+            chat.message(retval)
+        end
     end
     """
 
@@ -221,15 +226,17 @@ class CommandManager(object):
         if args is None:
             args = []
 
-        code = self.call_template.format(func_name=command)
-        lua_func = self.lua.eval(code)
+        def run():
+            code = self.call_template.format(func_name=command)
+            lua_func = self.lua.eval(code)
+            if self.commands[command]["want_user"]:
+                args.insert(0, nick)
 
-        if self.commands[command]["want_user"]:
-            args.insert(0, nick)
+            lua_func(*args)
 
-        retval = lua_func(*args)
-
-        return retval
+        lua_thread = Thread(target=run)
+        lua_thread.daemon = True
+        lua_thread.start()
 
     def load_lua(self, code):
         """
