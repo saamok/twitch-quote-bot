@@ -6,6 +6,10 @@ except ImportError:
     from urllib.request import Request, urlopen
 
 
+USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 " \
+             "(KHTML, like Gecko) Chrome/37.0.2062.120 Safari/537.36"
+
+
 class TupleData(object):
     """
     Container where it's easy to push tuple values from Lua to for use in HTTP
@@ -56,6 +60,8 @@ class TupleData(object):
 class Http(object):
     """
     Simple HTTP layer for use with the Lua API
+
+    Sends fake User-Agent string for a real browser instead of the default crap
     """
 
     def post(self, url, data=None, headers=None):
@@ -68,6 +74,7 @@ class Http(object):
         :return: Request response body
         """
         request = Request(url, str(data), headers)
+        request.add_header("User-Agent", USER_AGENT)
         response = urlopen(request)
         return response.read().decode('utf-8')
 

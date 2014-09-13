@@ -218,6 +218,38 @@ Usage in chat after that is quite simple:
 !highscores
 ```
 
+*Strawpoll*
+
+Create new Strawpolls via the bot.
+
+```
+!def --user_level=mod --args=title,... poll local sp = require("strawpoll");
+ sp.create(title, unpack(arg))
+```
+
+Usage in chat after that:
+```
+!poll my_new_poll option_1 option_2 option_3
+```
+
+The bot will show the URL to the new Strawpoll in the chat.
+
+
+*XP*
+
+Viewers in the chat will gain XP over time, and will be able to check their 
+current XP on demand.
+
+```
+!def --user_level=user --want_user xp local xp = require("xp"); return user 
+.. ", you currently have " .. xp.get_user_xp(user) .. " XP!"
+```
+
+And usage in chat:
+```
+!xp
+```
+
 
 Development environment
 =======================
