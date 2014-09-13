@@ -58,6 +58,43 @@ Setup
     For Python 2.6 you'll have to use ```python -m bot.__main__```
 
 
+Getting an OAuth token for Twitch chat IRC access
+=================================================
+
+You should visit these pages for help:
+
+ * http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc
+ * http://twitchapps.com/tmi/
+
+
+What if I want to stop using the bot?
+=====================================
+
+Getting rid of the bot itself is fairly easy, just stop it on the server you
+ are running it on (press CTLR+C a few times)
+ 
+However, you probably want access to your valued data as well. The bot's 
+database is implemented using a very widely known engine called SQLite. 
+There are plenty of tools you can use to take the bot.sqlite (default name) 
+database and extract whatever data you want from it.
+ 
+Quotes will probably be the only data actually useful outside of this bot, 
+so there is a separate tool just for extracting them, dump_quotes.py.
+
+Usage is fairly simple, call it and give it your channel's name (e.g. #lietu):
+```
+python dump_quotes.py "#lietu"
+```
+
+Notice the quotes in the example above, they are important to make sure your
+ shell does not think you are writing a comment.
+
+If you want to extract the quotes to a file, just redirect the output:
+```
+python dump_quotes.py "#lietu" > quotes.txt
+```
+
+ 
 Custom commands
 ===============
 
@@ -149,15 +186,6 @@ Usage in chat after that is quite simple:
 !spin
 !highscores
 ```
-
-
-Getting an OAuth token for Twitch chat IRC access
-=================================================
-
-You should visit these pages for help:
-
- * http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc
- * http://twitchapps.com/tmi/
 
 
 Development environment
