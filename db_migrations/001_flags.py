@@ -37,7 +37,7 @@ class FlagsMigration(Migration):
         table = models["commands"]._meta.db_table
 
         sql = """
-        SELECT * FROM {0} LIMIT 1
+        SELECT * FROM {0}
         """.format(table)
 
         result = db.execute_sql(sql)
