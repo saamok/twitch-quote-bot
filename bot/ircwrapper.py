@@ -122,11 +122,16 @@ class IRCWrapper(SingleServerIRCBot):
         :return: None
         """
 
-        self.queue.put(Task(
-            "_send_message",
-            channel,
-            message
-        ))
+        lines = message.split("\n")
+        if len(lines) > 3:
+            lines = lines[-3:]
+
+        for line in lines:
+            self.queue.put(Task(
+                "_send_message",
+                channel,
+                line
+            ))
 
     def is_oper(self, channel, nick):
         """
