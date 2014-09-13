@@ -2,9 +2,18 @@
 Database abstraction layer
 """
 
+import importlib
+import inspect
+import json
+import os
 from peewee import SqliteDatabase, Model, CharField, IntegerField, \
     BooleanField, TextField
 from peewee import fn
+
+
+class Migration(object):
+    def up(self, database, settings):
+        raise NotImplementedError("Migration up() not implemented")
 
 
 class Database(object):
@@ -15,6 +24,79 @@ class Database(object):
     def __init__(self, settings):
         self.settings = settings
         self.db = None
+        self.debug = False
+
+    def run_migrations(self):
+        """
+        Run any migrations not previously executed
+
+        :return:
+        """
+
+        db = self._get_db()
+
+        class DBState(Model):
+            migration = CharField(unique=True)
+
+            class Meta:
+                database = db
+
+        if not DBState.table_exists():
+            DBState.create_table()
+
+        migration_modules = self._find_migrations()
+        if self.debug:
+            print("Migration modules: " + ", ".join(migration_modules))
+
+        for module_name in migration_modules:
+            module = importlib.import_module(module_name)
+
+            if self.debug:
+                print("Processing migration module " + module_name)
+
+            for key in module.__dict__:
+                if key == "Migration":
+                    if self.debug:
+                        print("Skipping " + key)
+                    continue
+
+                if DBState.filter(migration=key).exists():
+                    if self.debug:
+                        print("Migration " + key + " already run")
+                    continue
+
+                item = module.__dict__[key]
+
+                if inspect.isclass(item) and issubclass(item, Migration):
+                    print("Running migration " + key)
+                    instance = item()
+                    instance.up(self, self.settings)
+
+                    DBState.create(migration=key)
+                else:
+                    if self.debug:
+                        print("Skipping " + key)
+
+    def _find_migrations(self):
+        """
+        Find any and all database migrations
+
+        :return:
+        """
+        migrations_path = os.path.realpath(os.path.join(
+            os.path.join(os.path.dirname(__file__), ".."),
+            "db_migrations"
+        ))
+
+        files = sorted(os.listdir(migrations_path))
+
+        modules = [
+            "db_migrations." + filename[:-3]
+            for filename in files
+            if filename[-3:] == ".py" and filename != "__init__.py"
+        ]
+
+        return modules
 
     def get_models(self, channel):
         """
@@ -27,6 +109,7 @@ class Database(object):
         channel = self._clean_channel(channel)
         db = self._get_db()
 
+
         class Regulars(Model):
             nick = CharField(unique=True)
 
@@ -36,9 +119,11 @@ class Database(object):
 
         class Commands(Model):
             command = CharField(unique=True)
-            want_user = BooleanField()
+            flags = TextField()
             user_level = CharField()
             code = TextField()
+
+            _flag_data = None
 
             class Meta:
                 database = db

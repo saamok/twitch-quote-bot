@@ -41,6 +41,18 @@ class CommandManagerTest(TestCase):
         )
         assert retval == 6
 
+    def test_want_user(self):
+        chat = Chat(None, None)
+        chat.message = Mock()
+        cm = bot.commandmanager.CommandManager("#tmp", FakeBot(), chat=chat)
+
+        # Some test command definitions
+        line = "-w test return user"
+        cm.add_command(line.split(" "))
+
+        retval = cm.run_command("fakeuser", "mod", "test", threaded=False)
+        assert retval == "fakeuser"
+
     def test_permissions(self):
 
         chat = Chat(None, None)

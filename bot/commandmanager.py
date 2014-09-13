@@ -173,9 +173,9 @@ class CommandManager(object):
                  level
         """
 
-        command, want_user, user_level, code = self._parse_func(args)
+        command, flags, user_level, code = self._parse_func(args)
 
-        return self.load_command(command, want_user, user_level, code)
+        return self.load_command(command, flags, user_level, code)
 
     def is_valid_command(self, command):
         """
@@ -187,12 +187,12 @@ class CommandManager(object):
 
         return command in self.commands
 
-    def load_command(self, command, want_user, user_level, code, set=True):
+    def load_command(self, command, flags, user_level, code, set=True):
         """
         Load a command in the runtime
 
         :param command: What is the command called
-        :param want_user: If the command wants the calling user's nick or not
+        :param flags: Command flags
         :param user_level: The minimum user level to run the command
         :param code: The Lua code for the custom command
         :param set: Should the command be set on the bot via set_command,
@@ -207,14 +207,14 @@ class CommandManager(object):
             ))
 
         self.commands[command] = {
-            "want_user": want_user,
+            "flags": flags,
             "user_level": user_level,
             "code": code
         }
 
         self.load_lua(code)
 
-        return self.channel, command, want_user, user_level, code
+        return self.channel, command, flags, user_level, code
 
     def run_command(self, nick, user_level, command, args=None, threaded=True):
         """
@@ -239,8 +239,9 @@ class CommandManager(object):
         def run():
             code = self.call_template.format(func_name=command)
             lua_func = self.lua.eval(code)
-            if self.commands[command]["want_user"]:
-                args.insert(0, nick)
+            if "want_user" in self.commands[command]["flags"]:
+                if self.commands[command]["flags"]["want_user"] == 1:
+                    args.insert(0, nick)
 
             return lua_func(*args)
 
@@ -296,7 +297,11 @@ class CommandManager(object):
             func_body=" ".join(options.func_body)
         )
 
-        return options.func_name, options.want_user, options.user_level, code
+        flags = {
+            "want_user": int(options.want_user)
+        }
+
+        return options.func_name, flags, options.user_level, code
 
     def _level_name_to_number(self, name):
         """

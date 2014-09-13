@@ -138,11 +138,11 @@ class Bot(object):
                 self._manage_regulars(channel, nick, args)
             elif command == "def":
                 cm = self.command_managers[channel]
-                channel, command, want_user, user_level, code = cm.add_command(
+                channel, command, flags, user_level, code = cm.add_command(
                     args
                 )
 
-                self.set_command(channel, command, want_user, user_level, code)
+                self.set_command(channel, command, flags, user_level, code)
 
                 message = "{0}, added command {1} for user level {2}".format(
                     nick, command, user_level
@@ -158,19 +158,19 @@ class Bot(object):
             ))
             self.logger.error("I caught a booboo .. waah!", exc_info=True)
 
-    def set_command(self, channel, command, want_user, user_level, code):
+    def set_command(self, channel, command, flags, user_level, code):
         """
         Save a new custom command or update existing one in the database
 
         :param channel: The channel the command is for
         :param command: What is the command called
-        :param want_user: If the command wants the calling user's nick or not
+        :param flags: Command flags
         :param user_level: The minimum user level to run the command
         :param code: The Lua code for the custom command
         :return: None
         """
 
-        self._set_command(channel, command, want_user, user_level, code)
+        self._set_command(channel, command, flags, user_level, code)
 
     def update_global_value(self, channel, key, value):
         """
@@ -483,13 +483,13 @@ class Bot(object):
     # Internal helper methods
     #
 
-    def _set_command(self, channel, command, want_user, user_level, code):
+    def _set_command(self, channel, command, flags, user_level, code):
         """
         Save a command on the channel's database
 
         :param channel: Which channel
         :param command: What command
-        :param want_user: If the command wants the calling user's nick
+        :param flags: Command flags
         :param user_level: Minimum user level to access this command
         :param code: The Lua code for the command
         :return: None
@@ -502,7 +502,7 @@ class Bot(object):
             cmd = model()
             cmd.command = command
 
-        cmd.want_user = want_user
+        cmd.flags = json.dumps(flags)
         cmd.user_level = user_level
         cmd.code = code
 
@@ -619,7 +619,7 @@ class Bot(object):
             for command in commands:
                 cm.load_command(
                     command.command,
-                    command.want_user,
+                    json.loads(command.flags),
                     command.user_level,
                     command.code,
                     set=False
@@ -644,6 +644,7 @@ class Bot(object):
         """
 
         self.db = Database(self.settings)
+        self.db.run_migrations()
         for channel in self.settings.CHANNEL_LIST:
             self.channel_models[channel] = self.db.get_models(channel)
 
