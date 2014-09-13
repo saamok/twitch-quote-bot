@@ -49,6 +49,35 @@ OWNER_USERS = [
     "lietu"
 ]
 
+# ----- ------- -----
+# ----- Backups -----
+# ----- ------- -----
+
+# The path where you want to store the backups in
+# A new folder will be created under this path for every backup, with the
+# current time and date (YYYY-MM-DD_HHMMSS). The database backup will be
+# stored inside the folder.
+#
+# Please make sure this folder is DEDICATED for the backups, as it WILL
+# delete content from it when rotating the backups.
+#
+# You will likely want to change this.
+BACKUP_BASEPATH = "/path/to/backups"
+
+# The Unix permissions to set to the new backup directories
+BACKUP_MODE = 0700
+
+# How many backup copies to keep
+BACKUP_COPIES = 336  # 2 weeks at 1 hour interval
+
+# Command to use to compress the backup as a list suitable for
+# subprocess.check_call. This means, you give the name of the command as the
+# first item, and any arguments as separate items.
+#
+# Use the {filename} -tag to refer to the database file
+# Set to None (not "None") if you want to disable compression for some reason
+BACKUP_COMPRESS_CMD = ["gzip", "-9", "{filename}"]
+
 # ----- --------- -----
 # ----- Internals -----
 # ----- --------- -----

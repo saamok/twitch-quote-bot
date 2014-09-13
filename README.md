@@ -94,6 +94,31 @@ If you want to extract the quotes to a file, just redirect the output:
 python dump_quotes.py "#lietu" > quotes.txt
 ```
 
+
+Backup tool
+===========
+
+Your data is important, which is why there's a bundled backup tool with the 
+bot.
+
+The tool handles:
+ * Keeping a given number of backups (e.g. 30)
+ * Optionally compressing the backups (with gzip)
+ 
+The settings for the backups are also in settings.py and should be fairly 
+easy to understand.
+
+To schedule the backups you need to use your crontab or other scheduling 
+system. E.g. on linux, run:
+```
+crontab -e
+```
+
+And add the following line (replace */path/to/* with the correct path):
+```
+0 * * * *   /path/to/backup.py 
+```
+
  
 Custom commands
 ===============
