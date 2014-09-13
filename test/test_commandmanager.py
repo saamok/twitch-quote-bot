@@ -53,6 +53,29 @@ class CommandManagerTest(TestCase):
         retval = cm.run_command("fakeuser", "mod", "test", threaded=False)
         assert retval == "fakeuser"
 
+    def test_quoted(self):
+        chat = Chat(None, None)
+        chat.message = Mock()
+        cm = bot.commandmanager.CommandManager("#tmp", FakeBot(), chat=chat)
+
+        # Some test command definitions
+        def_commands = [
+            "-q -a=name,job test_quoted return name .. ': ' .. job",
+            "-a=name,job test_not_quoted return name .. ': ' .. job",
+        ]
+
+        for line in def_commands:
+            cm.add_command(line.split(" "))
+
+        args = '"John Doe" "Car Salesman"'.split(" ")
+        retval = cm.run_command("fakeuser", "mod", "test_quoted", args,
+                                threaded=False)
+        assert retval == "John Doe: Car Salesman"
+
+        retval = cm.run_command("fakeuser", "mod", "test_not_quoted", args,
+                                threaded=False)
+        assert retval == '"John: Doe"'
+
     def test_permissions(self):
 
         chat = Chat(None, None)

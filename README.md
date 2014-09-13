@@ -114,7 +114,7 @@ system. E.g. on linux, run:
 crontab -e
 ```
 
-Check the path to your python executable (usually /usr/bin/python:
+Check the path to your python executable (usually /usr/bin/python):
 ```
 which python
 ```
@@ -136,11 +136,23 @@ The command for defining lua functions is "def" (add your prefix, e.g. !).
 
 The syntax is:
 ```
-!def [--user_level=userlevel] [--args=arguments] command_name <lua code>
+!def [--want_user] [--quoted] [--user_level=userlevel] [--args=arguments] 
+command_name <lua code>
 ```
 
-Instead of "--user_level" you can use "-ul" and instead of "--args" you can 
-use "-a".
+The --want_user -option makes the defined function receive the calling 
+user's name as the an argument called "user" (the first argument).
+
+The --quoted -option changes how arguments are processed, so it is possible to
+give arguments with multiple words in them, for e.g. Strawpoll creation. 
+This works so that "quoted strings" count only for a single argument. Both 
+single- (') and double quotes (") work.
+
+The short versions of argument names are:
+ * --user_level = -ul
+ * --args = -a
+ * --want_user = -w
+ * --quoted = -q
 
 Any value returned by the function will be output back in chat by the bot.
 
@@ -223,13 +235,13 @@ Usage in chat after that is quite simple:
 Create new Strawpolls via the bot.
 
 ```
-!def --user_level=mod --args=title,... poll local sp = require("strawpoll");
- sp.create(title, unpack(arg))
+!def --quoted --user_level=mod --args=title,... poll local sp = 
+ require("strawpoll"); sp.create(title, unpack(arg))
 ```
 
 Usage in chat after that:
 ```
-!poll my_new_poll option_1 option_2 option_3
+!poll "My new poll" "Option 1" "Option 2" ...
 ```
 
 The bot will show the URL to the new Strawpoll in the chat.

@@ -5,6 +5,7 @@ Module for handling the custom Lua commands for the bot
 import lupa
 import argparse
 import sys
+import shlex
 from threading import Thread
 from .utils import human_readable_time
 from .http import Http, TupleData
@@ -235,6 +236,11 @@ class CommandManager(object):
 
         if args is None:
             args = []
+        else:
+            if "quoted" in self.commands[command]["flags"]:
+                if self.commands[command]["flags"]["quoted"] == 1:
+                    text = " ".join(args)
+                    args = shlex.split(text)
 
         def run():
             code = self.call_template.format(func_name=command)
@@ -277,6 +283,8 @@ class CommandManager(object):
         parser.add_argument("-a", "--args", default="")
         parser.add_argument("-w", "--want_user", action="store_true",
                             default=False)
+        parser.add_argument("-q", "--quoted", action="store_true",
+                            default=False)
         parser.add_argument("func_name")
         parser.add_argument("func_body", nargs='*')
 
@@ -298,7 +306,8 @@ class CommandManager(object):
         )
 
         flags = {
-            "want_user": int(options.want_user)
+            "want_user": int(options.want_user),
+            "quoted": int(options.quoted)
         }
 
         return options.func_name, flags, options.user_level, code
