@@ -1,16 +1,25 @@
+import os
 import bot.commandmanager
+from bot.chat import Chat
 from unittest import TestCase
+from mock import Mock
 
 
 class FakeBot(object):
     settings = None
+
     def set_command(self, channel, command, want_user, user_level, code):
         pass
 
 
-class UtilsTest(TestCase):
+class CommandManagerTest(TestCase):
+    def setUp(self):
+        os.environ["LUA_PATH"] = "lua/lib/?.lua;lua/lib/?/?.lua"
+
     def test_functions(self):
-        cm = bot.commandmanager.CommandManager("#tmp", FakeBot())
+        chat = Chat(None, None)
+        chat.message = Mock()
+        cm = bot.commandmanager.CommandManager("#tmp", FakeBot(), chat=chat)
 
         # Some test command definitions
         def_commands = [
@@ -23,17 +32,21 @@ class UtilsTest(TestCase):
         for line in def_commands:
             cm.add_command(line.split(" "))
 
-        retval = cm.run_command("username", "mod", "test_func2", ["10"])
+        retval = cm.run_command("username", "mod", "test_func2", ["10"],
+                                threaded=False)
         assert retval == 21
 
         retval = cm.run_command(
-            "username", "mod", "test_args", ["1", "2", "3"]
+            "username", "mod", "test_args", ["1", "2", "3"], threaded=False
         )
         assert retval == 6
 
     def test_permissions(self):
 
-        cm = bot.commandmanager.CommandManager("#tmp", FakeBot())
+        chat = Chat(None, None)
+        chat.message = Mock()
+        cm = bot.commandmanager.CommandManager("#tmp", FakeBot(),
+                                               chat=chat)
 
         # Some test command definitions
         def_commands = [
@@ -56,8 +69,8 @@ class UtilsTest(TestCase):
             "owner_func"
         )
 
-        retval = cm.run_command("username", "owner", "owner_func")
-        assert retval == 0
+        cm.run_command("username", "owner", "owner_func", threaded=False)
+        chat.message.assert_called_with(0)
 
         # mod_func
 
@@ -69,8 +82,8 @@ class UtilsTest(TestCase):
             "mod_func"
         )
 
-        retval = cm.run_command("username", "mod", "mod_func")
-        assert retval == 1
+        cm.run_command("username", "mod", "mod_func", threaded=False)
+        chat.message.assert_called_with(1)
 
         # reg_func
 
@@ -82,14 +95,13 @@ class UtilsTest(TestCase):
             "reg_func"
         )
 
-        retval = cm.run_command("username", "reg", "reg_func")
-        assert retval == 2
+        cm.run_command("username", "reg", "reg_func", threaded=False)
+        chat.message.assert_called_with(2)
 
-        retval = cm.run_command("username", "owner", "reg_func")
-        assert retval == 2
+        cm.run_command("username", "owner", "reg_func", threaded=False)
+        chat.message.assert_called_with(2)
 
         # user_func
 
-        retval = cm.run_command("username", "user", "user_func")
-        assert retval == 3
-
+        cm.run_command("username", "user", "user_func", threaded=False)
+        chat.message.assert_called_with(3)

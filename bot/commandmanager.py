@@ -129,12 +129,22 @@ class CommandManager(object):
         if retval ~= nil then
             chat.message(retval)
         end
+
+        return retval
     end
     """
 
-    def __init__(self, channel, bot, settings=None, data=None, logger=None):
+    def __init__(self, channel, bot, settings=None, data=None, logger=None,
+                 chat=None):
+
         self.channel = channel
         self.bot = bot
+
+        if chat:
+            self.chat = chat
+        else:
+            self.chat = Chat(self.bot, self.channel)
+
         self.settings = settings
         self.logger = logger
         self.commands = {}
@@ -206,7 +216,7 @@ class CommandManager(object):
 
         return self.channel, command, want_user, user_level, code
 
-    def run_command(self, nick, user_level, command, args=None):
+    def run_command(self, nick, user_level, command, args=None, threaded=True):
         """
         Handles running of custom commands from chat
 
@@ -232,11 +242,14 @@ class CommandManager(object):
             if self.commands[command]["want_user"]:
                 args.insert(0, nick)
 
-            lua_func(*args)
+            return lua_func(*args)
 
-        lua_thread = Thread(target=run)
-        lua_thread.daemon = True
-        lua_thread.start()
+        if threaded:
+            lua_thread = Thread(target=run)
+            lua_thread.daemon = True
+            lua_thread.start()
+        else:
+            return run()
 
     def load_lua(self, code):
         """
@@ -361,7 +374,7 @@ class CommandManager(object):
         injector("datasource", self.datasource)
         injector("human_readable_time", human_readable_time)
         injector("settings", self.settings)
-        injector("Chat", Chat(self.bot, self.channel))
+        injector("Chat", self.chat)
         injector("Http", Http())
         injector("TupleData", TupleData)
         injector("Interval", interval)
