@@ -114,9 +114,15 @@ system. E.g. on linux, run:
 crontab -e
 ```
 
-And add the following line (replace */path/to/* with the correct path):
+Check the path to your python executable (usually /usr/bin/python:
 ```
-0 * * * *   /path/to/backup.py 
+which python
+```
+
+And add the following line (replace */path/to/* and */usr/bin/python* with the 
+correct paths):
+```
+0 * * * *   /usr/bin/python /path/to/backup.py > /dev/null
 ```
 
  

@@ -76,7 +76,14 @@ def _create_backup():
         os.path.basename(settings.DATABASE_PATH)
     )
 
-    copy(settings.DATABASE_PATH, destination)
+    source = settings.DATABASE_PATH
+    if source[0] != "/":
+        source = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            source
+        )
+
+    copy(source, destination)
     _compress(destination)
 
     return location
