@@ -313,6 +313,8 @@ Or to host for 48 hours:
 !host lietu 48
 ```
 
+You need to add the bot as a channel editor for it to be able to handle hosting
+and unhosting for your stream.
 
 
 
