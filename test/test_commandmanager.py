@@ -41,6 +41,37 @@ class CommandManagerTest(TestCase):
         )
         assert retval == 6
 
+    def test_simple_functions(self):
+        chat = Chat(None, None)
+        chat.message = Mock()
+        cm = bot.commandmanager.CommandManager("#tmp", FakeBot(), chat=chat)
+
+        # Some test command definitions
+        def_commands = [
+            "test_func Hello there, {user}",
+            "-ul=reg test_func2 Hello, {0}",
+        ]
+
+        for line in def_commands:
+            cm.add_simple_command(line.split(" "))
+
+        retval = cm.run_command("username", "mod", "test_func", [],
+                                threaded=False)
+        assert retval == "Hello there, username"
+
+        retval = cm.run_command(
+            "username", "reg", "test_func2", ["target"], threaded=False
+        )
+        assert retval == "Hello, target"
+
+        self.assertRaises(
+            bot.commandmanager.CommandPermissionError,
+            cm.run_command,
+            "username",
+            "user",
+            "test_func2"
+        )
+
     def test_want_user(self):
         chat = Chat(None, None)
         chat.message = Mock()

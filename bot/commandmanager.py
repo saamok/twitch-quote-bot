@@ -135,6 +135,13 @@ class CommandManager(object):
     end
     """
 
+    # Function template for doing Lua function calls
+    simple_template = """
+    function {func_name}({args})
+        return
+    end
+    """
+
     def __init__(self, channel, bot, settings=None, data=None, logger=None,
                  chat=None):
 
@@ -174,9 +181,30 @@ class CommandManager(object):
                  level
         """
 
-        command, flags, user_level, code = self._parse_func(args)
+        added, command, flags, user_level, code = self._parse_func(args)
 
-        return self.load_command(command, flags, user_level, code)
+        channel, command, flags, user_level, code = self.load_command(
+            command, flags, user_level, code
+        )
+
+        return added, channel, command, flags, user_level, code
+
+    def add_simple_command(self, args):
+        """
+        Handler for the "com" -commands in chat
+
+        :param args: All the words after the "com" -command
+        :return: A bunch of stuff
+        """
+
+        added, command, flags, user_level, code = self._parse_simple_func(args)
+
+        channel, command, flags, user_level, code = self.load_command(
+            command, flags, user_level, code
+        )
+
+        return added, channel, command, flags, user_level, code
+
 
     def is_valid_command(self, command):
         """
@@ -310,7 +338,50 @@ class CommandManager(object):
             "quoted": int(options.quoted)
         }
 
-        return options.func_name, flags, options.user_level, code
+        added = bool(options.func_body)
+
+        return added, options.func_name, flags, options.user_level, code
+
+    def _parse_simple_func(self, args):
+        """
+        Process the given arguments into a simple function definition
+
+        :param args: List of the words after the "com" command
+        :return: Function name, if it wants the caller's user name,
+                 the required user level, and the function's Lua code
+        :raise argparse.ArgumentError: There was something wrong with the args
+        """
+
+        parser = ArgumentParser()
+        parser.add_argument("-ul", "--user_level", default="mod")
+        parser.add_argument("func_name")
+        parser.add_argument("response_text", nargs='*')
+
+        options = parser.parse_args(args)
+
+        # Rebuild response
+        response_text = " ".join(options.response_text)
+        response_text = response_text.replace("\\", "\\\\")
+        response_text = response_text.replace('"', '\\"')
+
+        func_body = """
+        return SimpleCom("{response_text}", user, arg)
+        """.format(response_text=response_text)
+
+        code = self.func_template.format(
+            func_name=options.func_name,
+            args="user,...",
+            func_body=func_body
+        )
+
+        flags = {
+            "want_user": 1,
+            "quoted": 0
+        }
+
+        added = bool(options.response_text)
+
+        return added, options.func_name, flags, options.user_level, code
 
     def _level_name_to_number(self, name):
         """
@@ -384,6 +455,19 @@ class CommandManager(object):
             self.timers.append(i)
             return i
 
+        def simple_com(text, user, args):
+            params = []
+            for key in args:
+                if key != "n":
+                    params.append(args[key])
+
+            try:
+                response = text.format(*params, user=user)
+            except IndexError:
+                response = user + ", invalid number of arguments."
+
+            return response
+
         injector("log", log)
         injector("datasource", self.datasource)
         injector("human_readable_time", human_readable_time)
@@ -393,3 +477,4 @@ class CommandManager(object):
         injector("TupleData", TupleData)
         injector("Interval", interval)
         injector("Delayed", delayed)
+        injector("SimpleCom", simple_com)

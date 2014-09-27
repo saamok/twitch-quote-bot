@@ -125,7 +125,37 @@ correct paths):
 0 * * * *   /usr/bin/python /path/to/backup.py > /dev/null
 ```
 
+Simple commands
+===============
+
+For very simple commands similar to basic Nightbot commands, you can use the
+!com command.
  
+The syntax is fairly simple:
+```
+!com [--user_level=userlevel] command_name Some response text.
+```
+
+You can also use positional arguments (starting from 0), 
+and the calling user's name in the response text:
+```
+!com gift {0}, have a {1}, compliments of {user}
+```
+
+And then usage would be:
+```
+!gift lietu cookie
+```
+
+The bot allows limiting user access via the -ul= or --user_level= 
+argument, valid values are: "user", "reg", "mod", and "owner".
+
+To clear a command, just give it no response text:
+```
+!com command_name
+```
+
+
 Custom commands
 ===============
 
@@ -164,9 +194,7 @@ function that greets people on the channel:
 
 And you'd call that function e.g. ```!hello lietu```.
 
-The def command allows limiting user access via the -ul= or --user_level= 
-argument, valid values are: "user", "reg", "mod", and "owner" (not yet 
-implemented)
+The user levels are the same as for simple commands.
 
 You can define what arguments your function accepts from the chat using -a= or
  --args=, "..." is a lua magic argument that gives all the given arguments 

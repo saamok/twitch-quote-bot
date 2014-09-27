@@ -137,17 +137,34 @@ class Bot(object):
                 self._show_quote(channel, nick, args)
             elif command == "reg":
                 self._manage_regulars(channel, nick, args)
-            elif command == "def":
+            elif command == "def" or command == "com":
                 cm = self.command_managers[channel]
-                channel, command, flags, user_level, code = cm.add_command(
-                    args
+
+                if command == "def":
+                    added, channel, command, flags, user_level, code = \
+                        cm.add_command(
+                        args
+                    )
+                else:
+                    added, channel, command, flags, user_level, code = \
+                        cm.add_simple_command(
+                        args
+                    )
+
+                if added:
+                    message = "{0}, added command {1} for user level " \
+                              "{2}".format(
+                        nick, command, user_level
+                    )
+                else:
+                    message = "{0}, removed command {1}".format(
+                        nick, command, user_level
+                    )
+
+                self.set_command(
+                    channel, command, flags, user_level, code
                 )
 
-                self.set_command(channel, command, flags, user_level, code)
-
-                message = "{0}, added command {1} for user level {2}".format(
-                    nick, command, user_level
-                )
                 self._message(channel, message)
         except BaseException as e:
             message = "{0}, {1} error: {2}"
@@ -225,7 +242,8 @@ class Bot(object):
             "delquote",
             "quote",
             "reg",
-            "def"
+            "def",
+            "com"
         ]
 
     def _get_user_level(self, channel, nick):

@@ -11,7 +11,9 @@ end
 -- @param text
 --
 function chat.message(text)
-    _G["Chat"].message(text)
+    if text ~= "" then
+        _G["Chat"].message(text)
+    end
 end
 
 return chat
