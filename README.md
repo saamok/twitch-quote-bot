@@ -262,6 +262,31 @@ And usage in chat:
 !xp
 ```
 
+*Hosting*
+
+One big feature missing from Twitch's hosting is automatic unhosting after a
+specified time. The hosting management feature for the bot solves this, 
+by providing a simple command with an automatic unhost after a number of 
+hours that you can specify. The automatic unhost is set by default to 10 hours.
+
+Creating the command:
+```
+!def -a=user,hours host local host = require("host"); return host.host(user,
+ hours) 
+```
+
+Usage:
+```
+!host lietu
+```
+
+Or to host for 48 hours:
+```
+!host lietu 48
+```
+
+
+
 
 Development environment
 =======================
