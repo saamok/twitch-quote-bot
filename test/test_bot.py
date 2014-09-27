@@ -2,6 +2,7 @@ import logging
 import inspect
 import os
 import errno
+from datetime import datetime
 from mock import Mock
 from unittest import TestCase
 from bot.bot import Bot
@@ -32,13 +33,15 @@ class FakeWrapper(object):
 
 
 class Settings(object):
-    CHANNEL_LIST = ["#tmp"]
+    CHANNEL_LIST = {"#tmp": "Temp"}
     USER = ""
     HOST = ""
     OAUTH_TOKEN = ""
     PORT = ""
     COMMAND_PREFIX = ""
     DATABASE_PATH = ""
+    QUOTE_AUTO_SUFFIX = False
+    QUOTE_AUTO_SUFFIX_TEMPLATE = " - {streamer} @ {year}-{month:02}-{day:02}"
 
 
 class BotTest(TestCase):
@@ -69,7 +72,8 @@ class BotTest(TestCase):
         settings = Settings()
         settings.DATABASE_PATH = dbPath
 
-        bot = Bot(settings, None, FakeWrapper, logger=nullLogger, wrap_irc=False)
+        bot = Bot(settings, None, FakeWrapper, logger=nullLogger,
+                  wrap_irc=False)
         bot._initialize_models()
         bot._add_quote("#tmp", "foobar", ["test"])
         bot._add_quote("#tmp", "foobar", ["test2"])
@@ -86,21 +90,49 @@ class BotTest(TestCase):
         settings = Settings()
         settings.DATABASE_PATH = dbPath
 
-        bot = Bot(settings, None, FakeWrapper, logger=nullLogger, wrap_irc=False)
+        bot = Bot(settings, None, FakeWrapper, logger=nullLogger,
+                  wrap_irc=False)
         bot._initialize_models()
         quote_id, quote = bot._get_model("#tmp", "quotes").get_random_quote()
 
         assert quote_id is None
         assert quote is None
 
+    def test_quote_suffix(self):
+        dbPath = os.path.join(testPath, '__test_bot_quote_suffix.sqlite')
+        self._delete(dbPath)
+
+        settings = Settings()
+        settings.QUOTE_AUTO_SUFFIX = True
+
+        now = datetime.now()
+        expected_suffix = " - {streamer} @ {year}-{month:02}-{day:02}".format(
+            streamer=settings.CHANNEL_LIST["#tmp"],
+            year=int(now.strftime("%Y")),
+            month=int(now.strftime("%m")),
+            day=int(now.strftime("%d"))
+        )
+
+        bot = Bot(settings, None, FakeWrapper, logger=nullLogger,
+                  wrap_irc=False)
+        bot._initialize_models()
+        bot._add_quote("#tmp", "foobar", ["test"], timestamp=now)
+        quote_id, quote = bot._get_model("#tmp", "quotes").get_random_quote()
+
+        expected = "test" + expected_suffix
+
+        assert quote == expected
+
     def test_update_global_value(self):
-        dbPath = os.path.join(testPath, '__test_bot_update_global_value.sqlite')
+        dbPath = os.path.join(testPath,
+                              '__test_bot_update_global_value.sqlite')
         self._delete(dbPath)
 
         settings = Settings()
         settings.DATABASE_PATH = dbPath
 
-        bot = Bot(settings, None, FakeWrapper, logger=nullLogger, wrap_irc=False)
+        bot = Bot(settings, None, FakeWrapper, logger=nullLogger,
+                  wrap_irc=False)
         bot._initialize_models()
         bot.update_global_value("#tmp", "test", {"key1": "value1"})
 

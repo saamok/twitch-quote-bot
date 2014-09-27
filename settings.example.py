@@ -1,4 +1,4 @@
-# Copy this file to settings.py and edit it
+#  Copy this file to settings.py and edit it
 
 # The host and port of the server, if connecting to Twitch you probably
 # don't need to change these
@@ -14,11 +14,12 @@ OAUTH_TOKEN = "oauth:*************"
 # Where do you want to store the database
 DATABASE_PATH = "bot.sqlite"
 
-# What channels to join? Usually if your twitch username is foobar you want
-# to add #foobar
-CHANNEL_LIST = [
-    "#your_user_name"
-]
+# Configuration for channels and the the streamer names (for e.g. quotes)
+# Usually if your twitch username is foobar you want to configure this as:
+# { "#foobar": "FooBar" }
+CHANNEL_LIST = {
+    "#your_user_name": "Your User Name"
+}
 
 # If you want to log everything the bot does to a file, put the filename here
 LOG_FILE = None
@@ -48,6 +49,20 @@ LUA_PATH = "lua/lib/?.lua;lua/lib/?/?.lua"
 OWNER_USERS = [
     "lietu"
 ]
+
+# Add a suffix when showing a quote, that displays the name of the streamer
+# and time it was uttered on
+QUOTE_AUTO_SUFFIX = True
+
+# Python string format template for the suffix, supports the tags:
+# {streamer} - Name of the streamer
+# {year} - Current year
+# {month} - Current month (2 digits)
+# {day} - Current day of month (2 digits)
+# For zero padding, use string formatting features, {day:02} will show zero
+# padded 2 digit day always.
+# E.g. for ISO 8601: {year}-{month:02}-{day:02} -> 2014-12-31 / 2015-01-01
+QUOTE_AUTO_SUFFIX_TEMPLATE = " [{streamer} / {year}]"
 
 # ----- ------- -----
 # ----- Backups -----

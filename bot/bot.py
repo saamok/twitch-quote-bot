@@ -2,6 +2,7 @@
 The main bot logic module
 """
 
+from datetime import datetime
 from glob import glob
 import json
 from lupa import LuaError
@@ -418,7 +419,7 @@ class Bot(object):
 
             self.logger.info("No quotes for channel {0}".format(channel))
 
-    def _add_quote(self, channel, nick, args):
+    def _add_quote(self, channel, nick, args, timestamp=None):
         """
         Handler for the "addquote" -command, adds a quote to the database
 
@@ -437,9 +438,15 @@ class Bot(object):
             self._message(channel, message.format(nick))
             return
 
+        if not timestamp:
+            timestamp = datetime.now()
+
         model = self._get_model(channel, "quotes")
         quote = model.create(
-            quote=quote_text
+            quote=quote_text,
+            year=int(timestamp.strftime("%Y")),
+            month=int(timestamp.strftime("%m")),
+            day=int(timestamp.strftime("%d"))
         )
 
         message = "{0}, New quote added."

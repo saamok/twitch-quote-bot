@@ -68,7 +68,8 @@ class Database(object):
                 item = module.__dict__[key]
 
                 if inspect.isclass(item) and issubclass(item, Migration):
-                    print("Running migration " + key)
+                    if self.debug:
+                        print("Running migration " + key)
                     instance = item()
                     instance.up(self, self.settings)
 
@@ -106,8 +107,10 @@ class Database(object):
         :return: Dict with models
         """
 
+        raw_channel = channel
         channel = self._clean_channel(channel)
         db = self._get_db()
+        settings = self.settings
 
 
         class Regulars(Model):
@@ -139,6 +142,9 @@ class Database(object):
 
         class Quotes(Model):
             quote = TextField(unique=True)
+            year = IntegerField()
+            month = IntegerField()
+            day = IntegerField()
 
             class Meta:
                 database = db
@@ -155,9 +161,25 @@ class Database(object):
                 quote = Quotes.select().order_by(fn.Random()).limit(1).first()
 
                 if quote:
-                    return quote.id, quote.quote
+                    if settings.QUOTE_AUTO_SUFFIX:
+                        quoteText = quote.quote + Quotes._get_quote_suffix(
+                            quote
+                        )
+                    else:
+                        quoteText = quote.quote
+
+                    return quote.id, quoteText
                 else:
                     return None, None
+
+            @staticmethod
+            def _get_quote_suffix(quote):
+                return settings.QUOTE_AUTO_SUFFIX_TEMPLATE.format(
+                    streamer=settings.CHANNEL_LIST[raw_channel],
+                    year=quote.year,
+                    month=quote.month,
+                    day=quote.day
+                )
 
         model_map = {
             "regulars": Regulars,
