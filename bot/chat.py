@@ -24,4 +24,11 @@ class Chat(object):
         :return:
         """
 
-        return self.bot.get_irc().get_users(self.channel)
+        users = []
+
+        if self.bot:
+            irc = self.bot.get_irc()
+            if irc:
+                users = irc.get_users(self.channel)
+
+        return users

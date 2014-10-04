@@ -152,7 +152,11 @@ class IRCWrapper(SingleServerIRCBot):
         :return:
         """
 
-        return self.channels[channel].users()
+        users = []
+        if channel in self.channels:
+            users = self.channels[channel].users()
+
+        return users
 
     def _start_threads(self):
         """
