@@ -6,7 +6,8 @@ from datetime import datetime
 from glob import glob
 import json
 from lupa import LuaError
-from .commandmanager import CommandManager, CommandPermissionError
+from .commandmanager import CommandManager, CommandPermissionError, \
+    CommandCooldownError
 from .database import Database
 from .utils import ThreadCallRelay
 
@@ -101,7 +102,7 @@ class Bot(object):
 
         return self.ircWrapper
 
-    def irc_command(self, channel, nick, command, args):
+    def irc_command(self, channel, nick, command, args, timestamp):
         """
         Process a command from the chat
 
@@ -109,6 +110,7 @@ class Bot(object):
         :param nick: The nick of the user that issued the command
         :param command: The command issued
         :param args: All the words on the line after the command
+        :param timestamp: The unixtime for when the event happened
         :return: None
         """
 
@@ -119,7 +121,9 @@ class Bot(object):
             if not self._is_core_command(command):
                 cm = self.command_managers[channel]
                 if cm.is_valid_command(command):
-                    self._handle_custom_command(channel, nick, command, args)
+                    self._handle_custom_command(
+                        channel, nick, command, args, timestamp
+                    )
                 return
 
             if not self._is_allowed_to_run_command(channel, nick, command):
@@ -325,7 +329,7 @@ class Bot(object):
     # Chat commands
     #
 
-    def _handle_custom_command(self, channel, nick, command, args):
+    def _handle_custom_command(self, channel, nick, command, args, timestamp):
         """
         Handle execution of custom commands triggered via chat
 
@@ -333,6 +337,7 @@ class Bot(object):
         :param nick: The nick that triggered it
         :param command: The command to be triggered
         :param args: The words on the line after the command
+        :param timestamp: The unixtime for when the event happened
         :return: None
         """
 
@@ -342,10 +347,14 @@ class Bot(object):
         message = None
 
         try:
-            cm.run_command(nick, user_level, command, args)
+            cm.run_command(nick, user_level, command, args, timestamp)
         except CommandPermissionError:
             message = "{0}, you don't have permissions to run that " \
                      "command".format(nick)
+        except CommandCooldownError:
+            self.logger.debug("Ignoring call to {0} due to cooldown".format(
+                command
+            ))
         except LuaError as e:
             message = "{0}, oops, got Lua error: {1}".format(
                 nick, str(e)

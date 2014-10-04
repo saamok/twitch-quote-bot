@@ -6,6 +6,7 @@ import lupa
 import argparse
 import sys
 import shlex
+import time
 from threading import Thread
 from .utils import human_readable_time
 from .http import Http, TupleData
@@ -50,6 +51,13 @@ class CommandPermissionError(BaseException):
     """
     An exception that happens when a user tries to execute a custom command
     without the appropriate user level for it.
+    """
+    pass
+
+class CommandCooldownError(BaseException):
+    """
+    An exception that happens when a user tries to execute a custom command
+    during it's cooldown period.
     """
     pass
 
@@ -158,6 +166,7 @@ class CommandManager(object):
         self.commands = {}
         self.timers = []
         self.datasource = DataSource(channel, bot, data)
+        self.commands_last_executed = {}
 
         self.lua = lupa.LuaRuntime(unpack_returned_tuples=False)
         self._inject_globals()
@@ -245,7 +254,8 @@ class CommandManager(object):
 
         return self.channel, command, flags, user_level, code
 
-    def run_command(self, nick, user_level, command, args=None, threaded=True):
+    def run_command(self, nick, user_level, command, args=None,
+                    timestamp=None, threaded=True):
         """
         Handles running of custom commands from chat
 
@@ -253,6 +263,7 @@ class CommandManager(object):
         :param user_level: The calling user's level
         :param command: The command triggered
         :param args: The words on the line after the command
+        :param timestamp: The unixtime for when the event happened
         :return: Any return value from the custom Lua command, to be sent
                  back to the channel
         :raise CommandPermissionError: If user lacks permissions for command
@@ -269,6 +280,14 @@ class CommandManager(object):
                 if self.commands[command]["flags"]["quoted"] == 1:
                     text = " ".join(args)
                     args = shlex.split(text)
+
+        if timestamp is None:
+            timestamp = time.time()
+
+        if self._is_under_cooldown(command, timestamp):
+            raise CommandCooldownError()
+
+        self._set_last_executed_time(command, timestamp)
 
         def run():
             code = self.call_template.format(func_name=command)
@@ -308,6 +327,7 @@ class CommandManager(object):
 
         parser = ArgumentParser()
         parser.add_argument("-ul", "--user_level", default="mod")
+        parser.add_argument("-c", "--cooldown", default=None)
         parser.add_argument("-a", "--args", default="")
         parser.add_argument("-w", "--want_user", action="store_true",
                             default=False)
@@ -335,7 +355,8 @@ class CommandManager(object):
 
         flags = {
             "want_user": int(options.want_user),
-            "quoted": int(options.quoted)
+            "quoted": int(options.quoted),
+            "cooldown": (int(options.cooldown) if options.cooldown else None)
         }
 
         added = bool(options.func_body)
@@ -354,6 +375,7 @@ class CommandManager(object):
 
         parser = ArgumentParser()
         parser.add_argument("-ul", "--user_level", default="mod")
+        parser.add_argument("-c", "--cooldown", default=None)
         parser.add_argument("func_name")
         parser.add_argument("response_text", nargs='*')
 
@@ -376,12 +398,43 @@ class CommandManager(object):
 
         flags = {
             "want_user": 1,
-            "quoted": 0
+            "quoted": 0,
+            "cooldown": (int(options.cooldown) if options.cooldown else None)
         }
 
         added = bool(options.response_text)
 
         return added, options.func_name, flags, options.user_level, code
+
+    def _is_under_cooldown(self, command, timestamp):
+        """
+        Check if this command's cooldown period is in effect
+        :param command: Which command
+        :param timestamp: What is the timestamp it was issued on
+        :return:
+        """
+
+        if command in self.commands_last_executed:
+            if "cooldown" in self.commands[command]["flags"]:
+                cooldown_period = self.commands[command]["flags"]["cooldown"]
+                last_executed = self.commands_last_executed[command]
+
+                if cooldown_period is not None:
+                    cooldown_expires = last_executed + cooldown_period
+
+                    if timestamp < cooldown_expires:
+                        return True
+
+        return False
+
+    def _set_last_executed_time(self, command, timestamp):
+        """
+        Save the last execution time of a command
+        :param command: Which command
+        :param timestamp: What is the timestamp it was issued on
+        :return:
+        """
+        self.commands_last_executed[command] = timestamp
 
     def _level_name_to_number(self, name):
         """

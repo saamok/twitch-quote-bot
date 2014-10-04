@@ -77,13 +77,14 @@ class IRCWrapperTest(TestCase):
             "#tmp",
             "foobar",
             "!hello can you hear me?"
-        ))
+        ), timestamp=1)
 
         expected = (
             "#tmp",
             "foobar",
             "hello",
             ["can", "you", "hear", "me?"],
+            1
         )
 
         self.assertEqual(bot.data, expected)
@@ -95,13 +96,14 @@ class IRCWrapperTest(TestCase):
             "#tmp",
             "foobar",
             "Hello, world! I am a traveler looking for safety!"
-        ))
+        ), timestamp=1)
 
         expected = (
             "#tmp",
             "foobar",
             "i",
-            ["am", "a", "traveler", "looking", "for", "safety!"]
+            ["am", "a", "traveler", "looking", "for", "safety!"],
+            1
         )
 
         self.assertEqual(bot.data, expected)

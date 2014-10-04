@@ -107,6 +107,39 @@ class CommandManagerTest(TestCase):
                                 threaded=False)
         assert retval == '"John: Doe"'
 
+    def test_cooldown(self):
+
+        chat = Chat(None, None)
+        chat.message = Mock()
+        cm = bot.commandmanager.CommandManager("#tmp", FakeBot(), chat=chat)
+
+        # Some test command definitions
+        def_commands = [
+            "-c=5 cd_test Cooldown test",
+        ]
+
+        for line in def_commands:
+            cm.add_simple_command(line.split(" "))
+
+        def run_cmd(timestamp):
+            def _run():
+                return cm.run_command(
+                    "username", "mod", "cd_test", [], timestamp=timestamp,
+                    threaded=False
+                )
+
+            return _run
+
+        retval = run_cmd(1)()
+        assert retval == "Cooldown test"
+
+        self.assertRaises(
+            bot.commandmanager.CommandCooldownError, run_cmd(2)
+        )
+
+        retval = run_cmd(6)()
+        assert retval == "Cooldown test"
+
     def test_permissions(self):
 
         chat = Chat(None, None)

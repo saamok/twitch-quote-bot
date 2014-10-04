@@ -9,7 +9,7 @@ except ImportError:
 
 from threading import Thread
 from irc.bot import SingleServerIRCBot
-from time import sleep
+from time import sleep, time
 
 
 class Task(object):
@@ -252,7 +252,7 @@ class IRCWrapper(SingleServerIRCBot):
         channel = self._get_event_channel(event)
         self.logger.info("Joined {0}".format(channel))
 
-    def on_pubmsg(self, connection, event):
+    def on_pubmsg(self, connection, event, timestamp=None):
         """
         Event handler run when the bot seems a new message on any channel
 
@@ -269,7 +269,10 @@ class IRCWrapper(SingleServerIRCBot):
         if command:
             nick = self._get_event_nick(event)
 
-            self.bot.irc_command(channel, nick, command, args)
+            if timestamp is None:
+                timestamp = time()
+
+            self.bot.irc_command(channel, nick, command, args, timestamp)
 
     def _get_event_channel(self, event):
         """
