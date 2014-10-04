@@ -125,7 +125,7 @@ class CommandManager(object):
 
     # Template for creating new Lua functions
     func_template = """
-    function {func_name}({args})
+    function __chat__{func_name}({args})
         {func_body}
     end
     """
@@ -134,19 +134,12 @@ class CommandManager(object):
     call_template = """
     function(...)
         local chat = require("chat")
-        local retval = {func_name}(unpack(arg))
+        local retval = __chat__{func_name}(unpack(arg))
         if retval ~= nil then
             chat.message(retval)
         end
 
         return retval
-    end
-    """
-
-    # Function template for doing Lua function calls
-    simple_template = """
-    function {func_name}({args})
-        return
     end
     """
 

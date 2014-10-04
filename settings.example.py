@@ -28,13 +28,6 @@ LOG_FILE = None
 # you could also set this to "foobar" and the command would be "foobaraddquote"
 COMMAND_PREFIX = "!"
 
-# Spin configuration, min and max spin results
-SPIN_MIN = -100
-SPIN_MAX = 250
-
-# How many seconds do users need to wait between spins? 3600 = 1 hour
-SPIN_TIMEOUT = 3600
-
 # A glob pattern for including Lua code with, the code will be included
 # globally, for most cases you probably want to use library pattern and
 # store your files in the locations specified in LUA_PATH
@@ -63,6 +56,33 @@ QUOTE_AUTO_SUFFIX = True
 # padded 2 digit day always.
 # E.g. for ISO 8601: {year}-{month:02}-{day:02} -> 2014-12-31 / 2015-01-01
 QUOTE_AUTO_SUFFIX_TEMPLATE = " [{streamer} / {year}]"
+
+# ----- ------------------ -----
+# ----- Lua modules config -----
+# ----- ------------------ -----
+
+# You can configure the "currencies" to have the same value, and then the
+# modules will share the values.
+
+# The name of the "currency" gained over time via the XP module
+XP_CURRENCY = "XP"
+
+# The name of the "currency" gained/lost via the spin module
+SPIN_CURRENCY = "point(s)"
+
+# Spin configuration, min and max spin results
+SPIN_MIN = -100
+SPIN_MAX = 250
+
+# How many seconds do users need to wait between spins? 3600 = 1 hour
+SPIN_TIMEOUT = 3600
+
+# Which users should not gain XP etc.
+IGNORE_USERS = [
+    USER,  # the bot itself
+    "nightbot",
+    "moobot"
+]
 
 # ----- ------- -----
 # ----- Backups -----

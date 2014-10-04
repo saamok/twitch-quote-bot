@@ -10,24 +10,10 @@ Assuming you're using the default command prefix (!) you can do this with:
 
 --]==]
 
-local datasource = require("datasource")
-local utils = require("utils")
+local userdata = require("userdata")
 
-local spin_data = {}
-local highscores = {}
+local spin_currency = _G["settings"]["SPIN_CURRENCY"]
 local spin = {}
-
---- Save the current spin results to persistent storage
---
-function _save_spin_data()
-    datasource.set("spin_data", spin_data)
-end
-
---- Save the current highscores to persistent storage
---
-function _save_highscore_data()
-    datasource.set("spin_highscores", highscores)
-end
 
 --- Get a new result for a spin
 -- @return An integer value between SPIN_MIN and SPIN_MAX in settings
@@ -44,12 +30,17 @@ end
 --
 function _load_spin(user)
     local data
-    if spin_data[user] == nil then
+    local last_spin = userdata.get_value(spin_currency, user)
+    if last_spin == nil then
         data = {}
         data["value"] = 0
         data["last_spin_time"] = 0
     else
-        data = spin_data[user]
+        data = {}
+        data["value"] = last_spin
+        data["last_spin_time"] = userdata.get_value(spin_currency ..
+                "_last_spin", user)
+
     end
 
     return data
@@ -60,44 +51,11 @@ end
 -- @param value
 --
 function _save_spin(user, value)
-    spin_data[user] = {}
-    spin_data[user]["value"] = value
-    spin_data[user]["last_spin_time"] = os.time()
+    local timestamp = os.time()
 
-    _save_spin_data()
-    _save_highscore(user, value)
-end
-
---- Update highscores, taking this user's latest total in consideration
--- @param user
--- @param value
---
-function _save_highscore(user, value)
-    local tmp_scores = {}
-
-    local score = {}
-    score.user = user
-    score.value = value
-
-    tmp_scores[1] = score
-
-    for key, value in pairs(highscores) do
-        tmp_scores[key + 1] = value
-    end
-
-    local function compare(left, right)
-        return left.value > right.value
-    end
-
-    table.sort(tmp_scores, compare)
-
-    local unique = utils.unique(
-        tmp_scores,
-        function (item) return item.user end
-    )
-    highscores = utils.limit(unique, 3)
-
-    _save_highscore_data()
+    userdata.set_value(spin_currency, user, value)
+    userdata.set_value(spin_currency .. "_last_spin", user, timestamp)
+    userdata.save_highscore(spin_currency, user, value)
 end
 
 --- Check if enough time has elapsed since the last spin
@@ -109,22 +67,6 @@ function _get_wait_time(last_spin_time)
     return _G["settings"]["SPIN_TIMEOUT"] - elapsed
 end
 
---- Initialize our spin data from the global persistent storage
---
-function _initialize()
-    spin_data = datasource.get("spin_data")
-    highscores = datasource.get("spin_highscores")
-
-    if spin_data == nil then
-        spin_data = {}
-        _save_spin_data()
-    end
-
-    if highscores == nil then
-        highscores = {}
-        _save_highscore_data()
-    end
-end
 
 --- Spin the wheel of fortune
 -- @param user Name of the user spinning the wheel
@@ -139,7 +81,7 @@ function spin.spin(user)
         local time_text = _G["human_readable_time"](wait_time)
         return user .. ", you still need to wait " .. time_text ..
                 " before spinning again. You currently have " ..
-                previous["value"] .. " point(s)."
+                previous["value"] .. " " .. spin_currency .. "."
     end
 
     local new_spin = _get_spin()
@@ -148,7 +90,8 @@ function spin.spin(user)
     _save_spin(user, new_total)
 
     return user .. ", the wheel of fortune has granted you " .. new_spin ..
-            " point(s)! You now have a total of " .. new_total .. " point(s)."
+            " " .. spin_currency .. "! You now have a total of " ..
+            new_total .." " .. spin_currency
 end
 
 --- Show the current spin highscores
@@ -156,8 +99,9 @@ end
 --
 function spin.highscores()
     local scores = {}
+    local highscores = userdata.get_highscores(spin_currency)
     for key, item in pairs(highscores) do
-        scores[key] = item.user .. " with " .. item.value .. " point(s)"
+        scores[key] = item.user .. " with " .. item.value .. " " .. spin_currency
     end
 
     local message = "The current highscores for the wheel of fortune: " ..
@@ -166,12 +110,5 @@ function spin.highscores()
     return message
 end
 
---- Clear any cached values
---
-function spin.clear_cache()
-    highscores = {}
-end
-
-_initialize()
 
 return spin

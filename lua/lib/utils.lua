@@ -1,5 +1,17 @@
 local utils = {}
 
+--- Convert a given list of items to a "set" so you can check items' existence
+--- easily. s = utils.Set({"a", "b"}); if s["a"] then ... end
+-- @param list
+--
+function utils.Set(list)
+    local set = {}
+    for _, l in ipairs(list) do
+        set[l] = true
+    end
+    return set
+end
+
 --- Cleans the "n" item off your "arg" object
 -- @param args The arg object on a function taking ... arguments
 -- @return A table with the "n" item cleaned off

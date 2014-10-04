@@ -24,7 +24,8 @@ class CommandManagerTest(TestCase):
         # Some test command definitions
         def_commands = [
             "-ul=user -a=value test_func return tonumber(value) + 1",
-            "-ul=reg --args=value test_func2 return test_func(value) + 10",
+            "-ul=reg --args=value test_func2 return __chat__test_func(value)"
+            " + 10",
             "--args=... test_args local s = 0; for k, v in ipairs("
             "arg) do s = s + tonumber(v); end; return s"
         ]
