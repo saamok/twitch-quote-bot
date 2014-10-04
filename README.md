@@ -13,6 +13,14 @@ Current build status
 [![Build Status](https://travis-ci.org/lietu/twitch-quote-bot.svg?branch=master)](https://travis-ci.org/lietu/twitch-quote-bot)
 
 
+Using the bot
+=============
+The documentation for using the bot, creating commands, 
+etc. is in the GitHub [project wiki](https://github.com/lietu/twitch-quote-bot/wiki) at
+[https://github.com/lietu/twitch-quote-bot/wiki](https://github.com/lietu/twitch-quote-bot/wiki).
+
+
+
 Requirements
 ============
 * Python 2.6 - 3.3
@@ -124,198 +132,6 @@ correct paths):
 ```
 0 * * * *   /usr/bin/python /path/to/backup.py > /dev/null
 ```
-
-Simple commands
-===============
-
-For very simple commands similar to basic Nightbot commands, you can use the
-!com command.
- 
-The syntax is fairly simple:
-```
-!com [--user_level=userlevel] command_name Some response text.
-```
-
-You can also use positional arguments (starting from 0), 
-and the calling user's name in the response text:
-```
-!com gift {0}, have a {1}, compliments of {user}
-```
-
-And then usage would be:
-```
-!gift lietu cookie
-```
-
-The bot allows limiting user access via the -ul= or --user_level= 
-argument, valid values are: "user", "reg", "mod", and "owner".
-
-To clear a command, just give it no response text:
-```
-!com command_name
-```
-
-
-Custom commands
-===============
-
-You can add custom commands to the bot via the chat interface if you are a 
-moderator.
-
-The command for defining lua functions is "def" (add your prefix, e.g. !).
-
-The syntax is:
-```
-!def [--want_user] [--quoted] [--user_level=userlevel] [--args=arguments] 
-command_name <lua code>
-```
-
-The --want_user -option makes the defined function receive the calling 
-user's name as the an argument called "user" (the first argument).
-
-The --quoted -option changes how arguments are processed, so it is possible to
-give arguments with multiple words in them, for e.g. Strawpoll creation. 
-This works so that "quoted strings" count only for a single argument. Both 
-single- (') and double quotes (") work.
-
-The short versions of argument names are:
- * --user_level = -ul
- * --args = -a
- * --want_user = -w
- * --quoted = -q
-
-Any value returned by the function will be output back in chat by the bot.
-
-So assuming your using the default prefix of "!", you can e.g. create a 
-function that greets people on the channel:
-```
-!def -ul=mod -a=user hello return "Hi, " .. user
-```
-
-And you'd call that function e.g. ```!hello lietu```.
-
-The user levels are the same as for simple commands.
-
-You can define what arguments your function accepts from the chat using -a= or
- --args=, "..." is a lua magic argument that gives all the given arguments 
- in a variable called "arg", and it works fine with this bot.
-  
-```
-!def -ul=reg --args=... sum 
-!def --args=user,gift gift return user .. ", please accept this " .. gift
-```
-
-The functions will automatically be persisted to the sqlite database.
-
-
-Lua code files
-==============
-
-You can add custom Lua code to the bot by writing them in .lua files in the 
-lua/ -folder (or whatever you configured LUA_INCLUDE_GLOB for). There will 
-not be a interface for the chat created automatically for these commands, 
-but it's fairly easy for you to add the interface to a complex Lua 
-application separately.
-
-By default, there is a simple example in lua/example.lua, 
-and you can add a chat interface to it quite simply:
-```
-!def --args=... sum return sum_example(unpack(arg))
-```
-
-And then just call it via the newly created custom command:
-```
-!sum 1 2 3
-```
-
-Lua library files
-=================
-
-In addition to loading global code, if you're interested in doing things 
-"the right way", you can also add your Lua modules as libraries by placing 
-your code under ```lib/library.lua```, or ```lib/library/library.lua```. 
-
-This makes it possible for the functions (or other libraries) that need your 
-code to run ```require("library")``` to access the code via your public 
-methods.
- 
-Check for examples on this in the ```lua/lib/``` -directory. 
-
-There are some pre-existing features that can be integrated easily from the 
-Lua libraries to chat functions.
-
-*Wheel of fortune*
-```
-!def --want_user --user_level=user spin local spin = require("spin"); return
- spin.spin(user)
-!def --user_level=user highscores local spin = require("spin"); return
- spin.highscores()
-```
-
-Usage in chat after that is quite simple:
-```
-!spin
-!highscores
-```
-
-*Strawpoll*
-
-Create new Strawpolls via the bot.
-
-```
-!def --quoted --user_level=mod --args=title,... poll local sp = 
- require("strawpoll"); sp.create(title, unpack(arg))
-```
-
-Usage in chat after that:
-```
-!poll "My new poll" "Option 1" "Option 2" ...
-```
-
-The bot will show the URL to the new Strawpoll in the chat.
-
-
-*XP*
-
-Viewers in the chat will gain XP over time, and will be able to check their 
-current XP on demand.
-
-```
-!def --user_level=user --want_user xp local xp = require("xp"); return user 
-.. ", you currently have " .. xp.get_user_xp(user) .. " XP!"
-```
-
-And usage in chat:
-```
-!xp
-```
-
-*Hosting*
-
-One big feature missing from Twitch's hosting is automatic unhosting after a
-specified time. The hosting management feature for the bot solves this, 
-by providing a simple command with an automatic unhost after a number of 
-hours that you can specify. The automatic unhost is set by default to 10 hours.
-
-Creating the command:
-```
-!def -a=user,hours host local host = require("host"); return host.host(user,
- hours) 
-```
-
-Usage:
-```
-!host lietu
-```
-
-Or to host for 48 hours:
-```
-!host lietu 48
-```
-
-You need to add the bot as a channel editor for it to be able to handle hosting
-and unhosting for your stream.
-
 
 
 Development environment
