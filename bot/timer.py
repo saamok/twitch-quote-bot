@@ -69,5 +69,7 @@ class Interval(Delayed):
 
         :return:
         """
-        super(Interval, self)._timer_callback()
-        self.start()
+        try:
+            super(Interval, self)._timer_callback()
+        finally:
+            self.start()
