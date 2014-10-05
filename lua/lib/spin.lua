@@ -38,9 +38,12 @@ function _load_spin(user)
     else
         data = {}
         data["value"] = last_spin
-        data["last_spin_time"] = userdata.get_value(spin_currency ..
+        last_spin_time = userdata.get_value(spin_currency ..
                 "_last_spin", user)
-
+        if last_spin_time == nil then
+            last_spin_time = 0
+        end
+        data["last_spin_time"] = last_spin_time
     end
 
     return data
