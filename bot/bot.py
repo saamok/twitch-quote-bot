@@ -9,7 +9,8 @@ from lupa import LuaError
 from .commandmanager import CommandManager, CommandPermissionError, \
     CommandCooldownError
 from .database import Database
-from .utils import ThreadCallRelay
+from .utils import ThreadCallRelay, human_readable_time, ArgumentParser
+from .blacklist import BlacklistManager
 
 
 class Bot(object):
@@ -44,6 +45,7 @@ class Bot(object):
             self.ircWrapper = None
 
         self.command_managers = {}
+        self.blacklist_managers = {}
         self.channel_models = {}
         self.db = None
 
@@ -62,6 +64,8 @@ class Bot(object):
         self._initialize_models()
 
         self._initialize_command_managers()
+
+        self._initialize_blacklists()
 
         self.logger.info("Starting IRC connection")
         self.ircWrapper.start()
@@ -102,6 +106,42 @@ class Bot(object):
 
         return self.ircWrapper
 
+    def chat_message(self, channel, nick, text, timestamp):
+        """
+        Process a non-command line from the chat
+
+        :param channel: The channel where the command was issued on
+        :param nick: The nick of the user that issued the command
+        :param text: The text content of the message
+        :param timestamp: The unixtime for when the event happened
+        :return:
+        """
+
+        user_level = self._get_user_level(channel, nick)
+        if user_level not in ("mod", "owner"):
+            mgr = self.blacklist_managers[channel]
+            res, rule_id, ban_time = mgr.is_blacklisted(text)
+            if res:
+                self.logger.info(
+                    "{nick} will be timed out for {time} due to blacklist "
+                    "rule #{id}".format(
+                        nick=nick,
+                        time=human_readable_time(ban_time),
+                        id=rule_id
+                    )
+                )
+                self.timeout(channel, nick, ban_time)
+
+                message = "{nick}, you triggered blacklist rule #{id}, " \
+                          "you were timed out for {time}".format(
+                              nick=nick,
+                              id=rule_id,
+                              time=human_readable_time(ban_time)
+                )
+
+                self._message(channel, message)
+
+
     def irc_command(self, channel, nick, command, args, timestamp):
         """
         Process a command from the chat
@@ -111,7 +151,7 @@ class Bot(object):
         :param command: The command issued
         :param args: All the words on the line after the command
         :param timestamp: The unixtime for when the event happened
-        :return: None
+        :return: If this was a valid command that was executed
         """
 
         self.logger.debug("Got command {0} from {1} in {2}, with args: "
@@ -124,14 +164,14 @@ class Bot(object):
                     self._handle_custom_command(
                         channel, nick, command, args, timestamp
                     )
-                return
+                return False
 
             if not self._is_allowed_to_run_command(channel, nick, command):
                 self.logger.info("Command access denied")
                 message = "{0}, sorry, but you are not allowed to use that " \
                           "command."
                 self._message(channel, message.format(nick))
-                return
+                return False
 
             if command == "addquote":
                 self._add_quote(channel, nick, args)
@@ -147,13 +187,13 @@ class Bot(object):
                 if command == "def":
                     added, channel, command, flags, user_level, code = \
                         cm.add_command(
-                        args
-                    )
+                            args
+                        )
                 else:
                     added, channel, command, flags, user_level, code = \
                         cm.add_simple_command(
-                        args
-                    )
+                            args
+                        )
 
                 if added:
                     message = "{0}, added command {1} for user level " \
@@ -170,6 +210,21 @@ class Bot(object):
                 )
 
                 self._message(channel, message)
+            elif command == "blacklist":
+                message = self._add_to_blacklist(channel, nick, args)
+                self._message(channel, message)
+            elif command == "whitelist":
+                message = self._add_to_whitelist(channel, nick, args)
+                self._message(channel, message)
+            elif command == "unblacklist":
+                message = self._remove_from_blacklist(channel, nick, args)
+                self._message(channel, message)
+            elif command == "unwhitelist":
+                message = self._remove_from_whitelist(channel, nick, args)
+                self._message(channel, message)
+
+            return True
+
         except BaseException as e:
             message = "{0}, {1} error: {2}"
             exception_text = str(e)
@@ -179,6 +234,8 @@ class Bot(object):
                 nick, e.__class__.__name__, exception_text
             ))
             self.logger.error("I caught a booboo .. waah!", exc_info=True)
+
+        return False
 
     def set_command(self, channel, command, flags, user_level, code):
         """
@@ -205,6 +262,21 @@ class Bot(object):
         """
 
         self._update_channel_data(channel, key, value)
+
+    def timeout(self, channel, nick, seconds):
+        """
+        Timeout the given user for the given amount of seconds
+        :param channel:
+        :param nick:
+        :param seconds:
+        :return:
+        """
+
+        message = ".timeout {nick} {seconds}".format(
+            nick=nick, seconds=seconds
+        )
+
+        self._message(channel, message)
 
     #
     # Internal API
@@ -244,6 +316,10 @@ class Bot(object):
         return command in [
             "addquote",
             "delquote",
+            "blacklist",
+            "whitelist",
+            "unblacklist",
+            "unwhitelist",
             "quote",
             "reg",
             "def",
@@ -350,7 +426,7 @@ class Bot(object):
             cm.run_command(nick, user_level, command, args, timestamp)
         except CommandPermissionError:
             message = "{0}, you don't have permissions to run that " \
-                     "command".format(nick)
+                      "command".format(nick)
         except CommandCooldownError:
             self.logger.debug("Ignoring call to {0} due to cooldown".format(
                 command
@@ -507,7 +583,8 @@ class Bot(object):
         if quote:
             quote.delete_instance()
             message = "{0}, Quote removed.".format(nick)
-            self.logger.info("Removed quote {0} for {1}".format(quote_id, channel))
+            self.logger.info(
+                "Removed quote {0} for {1}".format(quote_id, channel))
         else:
             message = "{0}, no quote found with ID {1}".format(nick, quote_id)
 
@@ -579,6 +656,118 @@ class Bot(object):
             self.logger.info("Removed regular {0} from {1}".format(
                 nick, channel
             ))
+
+    def _add_to_blacklist(self, channel, nick, args):
+        """
+        Add an item to the blacklist
+        :param channel:
+        :param nick:
+        :param args:
+        :return:
+        """
+
+        parser = ArgumentParser()
+        parser.add_argument("-b", "--banTime", default="10m")
+        parser.add_argument("match", nargs='*')
+
+        options = parser.parse_args(args)
+
+        model = self._get_model(channel, "blacklist")
+
+        rule = model()
+        rule.match = " ".join(options.match)
+        rule.banTime = options.banTime
+        rule.save()
+
+        self.blacklist_managers[channel].add_blacklist(rule)
+
+        message = "{nick}, added blacklist rule {match} with ID {id}".format(
+            nick=nick, match=rule.match, id=rule.id
+        )
+
+        return message
+
+    def _add_to_whitelist(self, channel, nick, args):
+        """
+        Add an item to the whitelist
+        :param channel:
+        :param nick:
+        :param args:
+        :return:
+        """
+        model = self._get_model(channel, "whitelist")
+
+        rule = model()
+        rule.match = " ".join(args)
+        rule.save()
+
+        self.blacklist_managers[channel].add_whitelist(rule)
+
+        message = "{nick}, added whitelist rule {match} with ID {id}".format(
+            nick=nick, match=rule.match, id=rule.id
+        )
+
+        return message
+
+    def _remove_from_blacklist(self, channel, nick, args):
+        if len(args) == 0:
+            self.logger.info("Got 0 length unblacklist call from {0} in "
+                             "{1}?".format(nick, channel))
+
+            message = "{0}, ehh .. you gave me no ID?"
+            self._message(channel, message.format(nick))
+            return
+
+        row_id = args[0]
+
+        model = self._get_model(channel, "blacklist")
+        item = model.filter(id=row_id).first()
+
+        if item:
+            item.delete_instance()
+
+            self.blacklist_managers[channel].remove_blacklist(row_id)
+
+            message = "{0}, blacklist item removed.".format(nick)
+            self.logger.info("Removed blacklist item {0} for {1}".format(
+                row_id, channel
+            ))
+        else:
+            message = "{0}, no blacklist item found with ID {1}".format(
+                nick, row_id
+            )
+
+        return message
+
+    def _remove_from_whitelist(self, channel, nick, args):
+        if len(args) == 0:
+            self.logger.info("Got 0 length unwhitelist call from {0} in "
+                             "{1}?".format(nick, channel))
+
+            message = "{0}, ehh .. you gave me no ID?"
+            self._message(channel, message.format(nick))
+            return
+
+        row_id = args[0]
+
+        model = self._get_model(channel, "whitelist")
+        item = model.filter(id=row_id).first()
+
+        if item:
+            item.delete_instance()
+
+            self.blacklist_managers[channel].remove_whitelist(row_id)
+
+            message = "{0}, whitelist item removed.".format(nick)
+            self.logger.info("Removed whitelist item {0} for {1}".format(
+                row_id, channel
+            ))
+        else:
+            message = "{0}, no whitelist item found with ID {1}".format(
+                nick, row_id
+            )
+
+        return message
 
     def _update_channel_data(self, channel, key, value):
         """
@@ -660,6 +849,25 @@ class Bot(object):
                 )
 
             self.command_managers[channel] = cm
+
+    def _initialize_blacklists(self):
+        """
+        Set up blacklist managers for all the channels
+        :return:
+        """
+
+        for channel in self.settings.CHANNEL_LIST:
+            manager = BlacklistManager(logger=self.logger)
+
+            blacklist_model = self._get_model(channel, "blacklist")
+            whitelist_model = self._get_model(channel, "whitelist")
+
+            blacklist = list(blacklist_model.select())
+            whitelist = list(whitelist_model.select())
+
+            manager.set_data(blacklist, whitelist)
+
+            self.blacklist_managers[channel] = manager
 
     def _find_lua_files(self):
         """

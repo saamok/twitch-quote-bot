@@ -1,3 +1,5 @@
+import argparse
+import sys
 from multiprocessing import Queue as MPQueue
 
 try:
@@ -210,3 +212,39 @@ class ThreadCallRelay(CallRelay):
 
         super(ThreadCallRelay, self).__init__(logger, in_queue, out_queue)
 
+
+class ArgumentError(BaseException):
+    pass
+
+
+class ArgumentParser(argparse.ArgumentParser):
+    """
+    Customized ArgumentParser to allow catching error messages cleanly and
+    pass them back to chat.
+
+    `Related Stack Overflow post <http://stackoverflow.com/a/5943381>`_
+    """
+
+    def _get_action_from_name(self, name):
+        """
+        Given a name, get the Action instance registered with this parser.
+        If only it were made available in the ArgumentError object. It is
+        passed as it's first arg...
+        """
+        container = self._actions
+        if name is None:
+            return None
+        for action in container:
+            if '/'.join(action.option_strings) == name:
+                return action
+            elif action.metavar == name:
+                return action
+            elif action.dest == name:
+                return action
+
+    def error(self, message):
+        exc = sys.exc_info()[1]
+        if exc:
+            exc.argument = self._get_action_from_name(exc.argument_name)
+            raise exc
+        raise ArgumentError(message)

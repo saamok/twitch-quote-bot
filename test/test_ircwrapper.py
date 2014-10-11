@@ -62,6 +62,9 @@ class IRCWrapperTest(TestCase):
             def irc_command(self, *args):
                 self.data = args
 
+            def chat_message(self, *args):
+                pass
+
         bot = FakeBot()
 
         tmp = IRCWrapper(nullLogger, bot, FakeSettings())

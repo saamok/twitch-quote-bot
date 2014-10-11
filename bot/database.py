@@ -140,6 +140,21 @@ class Database(object):
                 database = db
                 db_table = "data_{channel}".format(channel=channel)
 
+        class Blacklist(Model):
+            match = CharField(unique=True)
+            banTime = CharField()
+
+            class Meta:
+                database = db
+                db_table = "blacklist_{channel}".format(channel=channel)
+
+        class Whitelist(Model):
+            match = CharField(unique=True)
+
+            class Meta:
+                database = db
+                db_table = "whitelist_{channel}".format(channel=channel)
+
         class Quotes(Model):
             quote = TextField(unique=True)
             year = IntegerField()
@@ -185,6 +200,8 @@ class Database(object):
             "regulars": Regulars,
             "commands": Commands,
             "data": Data,
+            "blacklist": Blacklist,
+            "whitelist": Whitelist,
             "quotes": Quotes
         }
 

@@ -140,6 +140,34 @@ class BotTest(TestCase):
 
         assert data["test"]["key1"] == "value1"
 
+    def test_blacklist_commands(self):
+        dbPath = os.path.join(testPath, '__test_bot_blacklist_commands.sqlite')
+        self._delete(dbPath)
+
+        settings = Settings()
+        settings.DATABASE_PATH = dbPath
+
+        bot = Bot(settings, None, FakeWrapper, logger=nullLogger,
+                  wrap_irc=False)
+        bot._initialize_models()
+        bot._initialize_blacklists()
+
+        lines = [
+            "!blacklist foobar",
+            "!blacklist --banTime=15m foobar2",
+            "!unblacklist 1",
+            "!unblacklist 2",
+            "!whitelist foobar",
+            "!unwhitelist 1"
+        ]
+
+        for line in lines:
+            parts = line.split(" ")
+            bot.irc_command("#tmp", "mod_user", parts[0][1:], parts[1:], 1)
+
+        assert len(bot.blacklist_managers["#tmp"].blacklist) == 0
+        assert len(bot.blacklist_managers["#tmp"].whitelist) == 0
+
     def test__is_allowed_to_run_command(self):
         bot = Bot()
 

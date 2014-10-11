@@ -267,16 +267,19 @@ class IRCWrapper(SingleServerIRCBot):
 
         text = self._get_event_text(event)
         channel = self._get_event_channel(event)
+        nick = self._get_event_nick(event)
 
+        if timestamp is None:
+            timestamp = time()
+
+        cmd = False
         command, args = self._get_command(text)
 
         if command:
-            nick = self._get_event_nick(event)
+            cmd = self.bot.irc_command(channel, nick, command, args, timestamp)
 
-            if timestamp is None:
-                timestamp = time()
-
-            self.bot.irc_command(channel, nick, command, args, timestamp)
+        if not cmd:
+            self.bot.chat_message(channel, nick, text, timestamp)
 
     def _get_event_channel(self, event):
         """
