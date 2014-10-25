@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# coding: utf-8
+# coding=utf-8
+
 import logging
 import inspect
 import os

@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# coding: utf-8
+# coding=utf-8
+
 import os
 import bot.commandmanager
 from bot.chat import Chat
