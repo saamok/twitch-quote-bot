@@ -23,9 +23,12 @@ etc. is in the GitHub [project wiki](https://github.com/lietu/twitch-quote-bot/w
 
 Requirements
 ============
-* Python 2.6 - 3.3
+* Python 2.6/2.7/3.3/3.4 
 * pip
 * lua (5.1, 5.2 or luajit should work)
+
+Python 3.1 and 3.2 don't work because of they broke backwards compatibility 
+with unicode string literals. Thanks pals.
 
 Optional:
 * virtualenv
