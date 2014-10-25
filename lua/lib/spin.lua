@@ -10,10 +10,12 @@ Assuming you're using the default command prefix (!) you can do this with:
 
 --]==]
 
+local datasource = require("datasource")
 local userdata = require("userdata")
 
 local spin_currency = _G["settings"]["SPIN_CURRENCY"]
 local spin = {}
+local spin_enabled
 
 --- Get a new result for a spin
 -- @return An integer value between SPIN_MIN and SPIN_MAX in settings
@@ -70,12 +72,24 @@ function _get_wait_time(last_spin_time)
     return _G["settings"]["SPIN_TIMEOUT"] - elapsed
 end
 
+--- Loads our settings from the DB
+--
+function _initialize()
+    spin_enabled = datasource.get("spin_enabled")
+    if spin_enabled == nil then
+        spin_enabled = true
+    end
+end
 
 --- Spin the wheel of fortune
 -- @param user Name of the user spinning the wheel
 -- @return A message to be shown on chat
 --
 function spin.spin(user)
+    if not spin_enabled then
+        return
+    end
+
     local previous = _load_spin(user)
 
     local wait_time = _get_wait_time(previous["last_spin_time"])
@@ -95,6 +109,10 @@ function spin.spin(user)
 end
 
 function spin.cooldown(user)
+    if not spin_enabled then
+        return
+    end
+
     local previous = _load_spin(user)
     local wait_time = _get_wait_time(previous["last_spin_time"])
 
@@ -124,5 +142,20 @@ function spin.highscores()
     return message
 end
 
+--- Enable the spin and cooldown functions
+--
+function spin.enable()
+    spin_enabled = true
+    datasource.set("spin_enabled", true)
+end
+
+--- Disable the spin and cooldown functions
+--
+function spin.disable()
+    spin_enabled = false
+    datasource.set("spin_enabled", false)
+end
+
+_initialize()
 
 return spin
