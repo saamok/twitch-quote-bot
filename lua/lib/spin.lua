@@ -81,10 +81,7 @@ function spin.spin(user)
     local wait_time = _get_wait_time(previous["last_spin_time"])
 
     if wait_time > 0 then
-        local time_text = _G["human_readable_time"](wait_time)
-        return user .. ", you still need to wait " .. time_text ..
-                " before spinning again. You currently have " ..
-                previous["value"] .. " " .. spin_currency .. "."
+        return
     end
 
     local new_spin = _get_spin()
@@ -95,6 +92,20 @@ function spin.spin(user)
     return user .. ", the wheel of fortune has granted you " .. new_spin ..
             " " .. spin_currency .. "! You now have a total of " ..
             new_total .." " .. spin_currency
+end
+
+function spin.cooldown(user)
+    local previous = _load_spin(user)
+    local wait_time = _get_wait_time(previous["last_spin_time"])
+
+    if wait_time > 0 then
+        local time_text = _G["human_readable_time"](wait_time)
+        return user .. ", you still need to wait " .. time_text ..
+            " before spinning again. You currently have " ..
+            previous["value"] .. " " .. spin_currency .. "."
+    else
+        return user .. ", you can spin right now!"
+    end
 end
 
 --- Show the current spin highscores
