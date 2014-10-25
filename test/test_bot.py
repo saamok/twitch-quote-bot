@@ -32,6 +32,11 @@ class FakeWrapper(object):
         pass
 
 
+class FakeCommandManager(object):
+    def is_valid_command(self, command):
+        return False
+
+
 class Settings(object):
     CHANNEL_LIST = {"#tmp": "Temp"}
     USER = ""
@@ -40,6 +45,7 @@ class Settings(object):
     PORT = ""
     COMMAND_PREFIX = ""
     DATABASE_PATH = ""
+    OWNER_USERS = ["owner_user"]
     QUOTE_AUTO_SUFFIX = False
     QUOTE_AUTO_SUFFIX_TEMPLATE = " - {streamer} @ {year}-{month:02}-{day:02}"
 
@@ -167,6 +173,14 @@ class BotTest(TestCase):
 
         assert len(bot.blacklist_managers["#tmp"].blacklist) == 0
         assert len(bot.blacklist_managers["#tmp"].whitelist) == 0
+
+    def test_unicode(self):
+        settings = Settings()
+        bot = Bot(settings, None, irc_wrapper=FakeWrapper, logger=nullLogger,
+                  wrap_irc=False)
+        bot.command_managers["#tmp"] = FakeCommandManager()
+        # This shouldn't crash
+        bot.irc_command("#tmp", "test", "ヽ༼ຈل͜ຈ༽ﾉ", ["AMENO", "ヽ༼ຈل͜ຈ༽ﾉ"], 1)
 
     def test__is_allowed_to_run_command(self):
         bot = Bot()

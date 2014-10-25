@@ -59,7 +59,7 @@ class Bot(object):
         :return: None
         """
 
-        self.logger.info("Starting bot...")
+        self.logger.info(u"Starting bot...")
 
         self._initialize_models()
 
@@ -67,7 +67,7 @@ class Bot(object):
 
         self._initialize_blacklists()
 
-        self.logger.info("Starting IRC connection")
+        self.logger.info(u"Starting IRC connection")
         self.ircWrapper.start()
 
         # Run until we want to exit
@@ -123,8 +123,8 @@ class Bot(object):
             res, rule_id, ban_time = mgr.is_blacklisted(text)
             if res:
                 self.logger.info(
-                    "{nick} will be timed out for {time} due to blacklist "
-                    "rule #{id}".format(
+                    u"{nick} will be timed out for {time} due to blacklist "
+                    u"rule #{id}".format(
                         nick=nick,
                         time=human_readable_time(ban_time),
                         id=rule_id
@@ -132,8 +132,8 @@ class Bot(object):
                 )
                 self.timeout(channel, nick, ban_time)
 
-                message = "{nick}, you triggered blacklist rule #{id}, " \
-                          "you were timed out for {time}".format(
+                message = u"{nick}, you triggered blacklist rule #{id}, " \
+                          u"you were timed out for {time}".format(
                               nick=nick,
                               id=rule_id,
                               time=human_readable_time(ban_time)
@@ -154,10 +154,11 @@ class Bot(object):
         :return: If this was a valid command that was executed
         """
 
-        self.logger.debug("Got command {0} from {1} in {2}, with args: "
-                          "{3}".format(command, nick, channel, " ".join(args)))
-
         try:
+            self.logger.debug(u"Got command {0} from {1} in {2}, with args: "
+                              u"{3}".format(command, nick, channel,
+                                            " ".join(args)))
+
             if not self._is_core_command(command):
                 cm = self.command_managers[channel]
                 if cm.is_valid_command(command):
@@ -167,24 +168,24 @@ class Bot(object):
                 return False
 
             if not self._is_allowed_to_run_command(channel, nick, command):
-                self.logger.info("Command access denied")
-                message = "{0}, sorry, but you are not allowed to use that " \
-                          "command."
+                self.logger.info(u"Command access denied")
+                message = u"{0}, sorry, but you are not allowed to use that " \
+                          u"command."
                 self._message(channel, message.format(nick))
                 return False
 
-            if command == "addquote":
+            if command == u"addquote":
                 self._add_quote(channel, nick, args)
-            elif command == "delquote":
+            elif command == u"delquote":
                 self._del_quote(channel, nick, args)
-            elif command == "quote":
+            elif command == u"quote":
                 self._show_quote(channel, nick, args)
-            elif command == "reg":
+            elif command == u"reg":
                 self._manage_regulars(channel, nick, args)
-            elif command == "def" or command == "com":
+            elif command == u"def" or command == u"com":
                 cm = self.command_managers[channel]
 
-                if command == "def":
+                if command == u"def":
                     added, channel, command, flags, user_level, code = \
                         cm.add_command(
                             args
@@ -196,12 +197,12 @@ class Bot(object):
                         )
 
                 if added:
-                    message = "{0}, added command {1} for user level " \
-                              "{2}".format(
+                    message = u"{0}, added command {1} for user level " \
+                              u"{2}".format(
                         nick, command, user_level
                     )
                 else:
-                    message = "{0}, removed command {1}".format(
+                    message = u"{0}, removed command {1}".format(
                         nick, command, user_level
                     )
 
@@ -210,30 +211,31 @@ class Bot(object):
                 )
 
                 self._message(channel, message)
-            elif command == "blacklist":
+            elif command == u"blacklist":
                 message = self._add_to_blacklist(channel, nick, args)
                 self._message(channel, message)
-            elif command == "whitelist":
+            elif command == u"whitelist":
                 message = self._add_to_whitelist(channel, nick, args)
                 self._message(channel, message)
-            elif command == "unblacklist":
+            elif command == u"unblacklist":
                 message = self._remove_from_blacklist(channel, nick, args)
                 self._message(channel, message)
-            elif command == "unwhitelist":
+            elif command == u"unwhitelist":
                 message = self._remove_from_whitelist(channel, nick, args)
                 self._message(channel, message)
 
             return True
 
         except BaseException as e:
-            message = "{0}, {1} error: {2}"
+            message = u"{0}, {1} error: {2}"
             exception_text = str(e)
-            exception_text = exception_text.replace("<", "")
-            exception_text = exception_text.replace(">", "")
+            exception_text = exception_text.replace(u"<", "")
+            exception_text = exception_text.replace(u">", "")
+
             self._message(channel, message.format(
                 nick, e.__class__.__name__, exception_text
             ))
-            self.logger.error("I caught a booboo .. waah!", exc_info=True)
+            self.logger.error(u"I caught a booboo .. waah!", exc_info=True)
 
         return False
 
@@ -291,7 +293,7 @@ class Bot(object):
         :return: None
         """
 
-        self.logger.debug("Sending message to {0}: {1}".format(
+        self.logger.debug(u"Sending message to {0}: {1}".format(
             channel, message
         ))
 
@@ -307,23 +309,23 @@ class Bot(object):
 
         >>> from bot.bot import Bot
         >>> b = Bot()
-        >>> b._is_core_command("def")
+        >>> b._is_core_command(u"def")
         True
-        >>> b._is_core_command("get_fucked")
+        >>> b._is_core_command(u"get_fucked")
         False
         """
 
         return command in [
-            "addquote",
-            "delquote",
-            "blacklist",
-            "whitelist",
-            "unblacklist",
-            "unwhitelist",
-            "quote",
-            "reg",
-            "def",
-            "com"
+            u"addquote",
+            u"delquote",
+            u"blacklist",
+            u"whitelist",
+            u"unblacklist",
+            u"unwhitelist",
+            u"quote",
+            u"reg",
+            u"def",
+            u"com"
         ]
 
     def _get_user_level(self, channel, nick):
@@ -362,7 +364,7 @@ class Bot(object):
         if user_level in ("mod", "owner"):
             # Mods and owners can run any and all core commands
             return True
-        elif command in ("addquote", "delquote", "quote"):
+        elif command in (u"addquote", u"delquote", u"quote"):
             if user_level == "reg":
                 return True
 
@@ -425,14 +427,14 @@ class Bot(object):
         try:
             cm.run_command(nick, user_level, command, args, timestamp)
         except CommandPermissionError:
-            message = "{0}, you don't have permissions to run that " \
-                      "command".format(nick)
+            message = u"{0}, you don't have permissions to run that " \
+                      u"command".format(nick)
         except CommandCooldownError:
-            self.logger.debug("Ignoring call to {0} due to cooldown".format(
+            self.logger.debug(u"Ignoring call to {0} due to cooldown".format(
                 command
             ))
         except LuaError as e:
-            message = "{0}, oops, got Lua error: {1}".format(
+            message = u"{0}, oops, got Lua error: {1}".format(
                 nick, str(e)
             )
 
@@ -456,45 +458,46 @@ class Bot(object):
         action = args[0].lower()
         regular = args[1].lower()
 
-        if not action in ('add', 'del'):
+        if not action in (u'add', u'del'):
             ok = False
 
         if not ok:
-            self.logger.warn("Manage regulars got invalid args?")
-            message = "{0}, that doesn't look like a valid command?"
+            self.logger.warn(u"Manage regulars got invalid args?")
+            message = u"{0}, that doesn't look like a valid command?"
             self._message(channel, message.format(nick))
 
             return
 
-        if action == 'add':
+        if action == u'add':
             if self._is_regular(channel, regular):
                 self.logger.info(
-                    "Trying to add {0} to {1} regulars, but they were "
-                    "already one.".format(
+                    u"Trying to add {0} to {1} regulars, but they were "
+                    u"already one.".format(
                         regular, channel
                     )
                 )
-                message = "{0}, {1} is already a regular?"
+                message = u"{0}, {1} is already a regular?"
                 self._message(channel, message.format(nick, regular))
                 return
 
             self._add_regular(channel, regular)
-            message = "{0}, Added new regular: {1}"
+            message = u"{0}, Added new regular: {1}"
             self._message(channel, message.format(nick, regular))
-        elif action == 'del':
+        elif action == u'del':
             if not self._is_regular(channel, regular):
                 self.logger.info(
-                    "Trying to remove {0} from {1} regulars, but they weren't "
-                    "a regular there.".format(
+                    u"Trying to remove {0} from {1} regulars, but they "
+                    u"weren't "
+                    u"a regular there.".format(
                         regular, channel
                     )
                 )
-                message = "{0}, {1} is not a regular?"
+                message = u"{0}, {1} is not a regular?"
                 self._message(channel, message.format(nick, regular))
                 return
 
             self._remove_regular(channel, regular)
-            message = "{0}, Removed regular: {1}"
+            message = u"{0}, Removed regular: {1}"
             self._message(channel, message.format(nick, regular))
 
     def _show_quote(self, channel, nick, args):
@@ -507,20 +510,20 @@ class Bot(object):
         :return: None
         """
 
-        model = self._get_model(channel, "quotes")
+        model = self._get_model(channel, u"quotes")
         quote_id, quote = model.get_random_quote()
         if quote:
-            message = "Quote #{0}: {1}".format(quote_id, quote)
+            message = u"Quote #{0}: {1}".format(quote_id, quote)
             self._message(channel, message)
 
-            self.logger.info("Showed quote for channel {0}: {1}".format(
+            self.logger.info(u"Showed quote for channel {0}: {1}".format(
                 channel, quote
             ))
         else:
-            message = "No quotes in the database. Maybe you should add one?"
+            message = u"No quotes in the database. Maybe you should add one?"
             self._message(channel, message)
 
-            self.logger.info("No quotes for channel {0}".format(channel))
+            self.logger.info(u"No quotes for channel {0}".format(channel))
 
     def _add_quote(self, channel, nick, args, timestamp=None):
         """
@@ -534,10 +537,10 @@ class Bot(object):
 
         quote_text = " ".join(args)
         if len(quote_text) == 0:
-            self.logger.info("Got 0 length addquote call from {0} in "
-                             "{1}?".format(nick, channel))
+            self.logger.info(u"Got 0 length addquote call from {0} in "
+                             u"{1}?".format(nick, channel))
 
-            message = "{0}, ehh .. you gave me no quote?"
+            message = u"{0}, ehh .. you gave me no quote?"
             self._message(channel, message.format(nick))
             return
 
@@ -552,10 +555,10 @@ class Bot(object):
             day=int(timestamp.strftime("%d"))
         )
 
-        message = "{0}, New quote added."
+        message = u"{0}, New quote added."
         self._message(channel, message.format(nick))
 
-        self.logger.info("Added quote for {0}: {1}".format(channel, quote))
+        self.logger.info(u"Added quote for {0}: {1}".format(channel, quote))
 
     def _del_quote(self, channel, nick, args):
         """
@@ -568,10 +571,10 @@ class Bot(object):
         """
 
         if len(args) == 0:
-            self.logger.info("Got 0 length delquote call from {0} in "
-                             "{1}?".format(nick, channel))
+            self.logger.info(u"Got 0 length delquote call from {0} in "
+                             u"{1}?".format(nick, channel))
 
-            message = "{0}, ehh .. you gave me no quote ID?"
+            message = u"{0}, ehh .. you gave me no quote ID?"
             self._message(channel, message.format(nick))
             return
 
@@ -582,11 +585,12 @@ class Bot(object):
 
         if quote:
             quote.delete_instance()
-            message = "{0}, Quote removed.".format(nick)
+            message = u"{0}, Quote removed.".format(nick)
             self.logger.info(
-                "Removed quote {0} for {1}".format(quote_id, channel))
+                u"Removed quote {0} for {1}".format(quote_id, channel)
+            )
         else:
-            message = "{0}, no quote found with ID {1}".format(nick, quote_id)
+            message = u"{0}, no quote found with ID {1}".format(nick, quote_id)
 
         self._message(channel, message)
 
@@ -619,7 +623,7 @@ class Bot(object):
 
         cmd.save()
 
-        self.logger.info("Updated command {0} with user level {1}".format(
+        self.logger.info(u"Updated command {0} with user level {1}".format(
             command, user_level
         ))
 
@@ -637,7 +641,7 @@ class Bot(object):
             nick=nick
         )
 
-        self.logger.info("Added regular {0} to {1}".format(nick, channel))
+        self.logger.info(u"Added regular {0} to {1}".format(nick, channel))
 
     def _remove_regular(self, channel, nick):
         """
@@ -653,7 +657,7 @@ class Bot(object):
 
         if regular:
             regular.delete_instance()
-            self.logger.info("Removed regular {0} from {1}".format(
+            self.logger.info(u"Removed regular {0} from {1}".format(
                 nick, channel
             ))
 
@@ -681,7 +685,7 @@ class Bot(object):
 
         self.blacklist_managers[channel].add_blacklist(rule)
 
-        message = "{nick}, added blacklist rule {match} with ID {id}".format(
+        message = u"{nick}, added blacklist rule {match} with ID {id}".format(
             nick=nick, match=rule.match, id=rule.id
         )
 
@@ -703,7 +707,7 @@ class Bot(object):
 
         self.blacklist_managers[channel].add_whitelist(rule)
 
-        message = "{nick}, added whitelist rule {match} with ID {id}".format(
+        message = u"{nick}, added whitelist rule {match} with ID {id}".format(
             nick=nick, match=rule.match, id=rule.id
         )
 
@@ -711,10 +715,10 @@ class Bot(object):
 
     def _remove_from_blacklist(self, channel, nick, args):
         if len(args) == 0:
-            self.logger.info("Got 0 length unblacklist call from {0} in "
-                             "{1}?".format(nick, channel))
+            self.logger.info(u"Got 0 length unblacklist call from {0} in "
+                             u"{1}?".format(nick, channel))
 
-            message = "{0}, ehh .. you gave me no ID?"
+            message = u"{0}, ehh .. you gave me no ID?"
             self._message(channel, message.format(nick))
             return
 
@@ -728,12 +732,12 @@ class Bot(object):
 
             self.blacklist_managers[channel].remove_blacklist(row_id)
 
-            message = "{0}, blacklist item removed.".format(nick)
-            self.logger.info("Removed blacklist item {0} for {1}".format(
+            message = u"{0}, blacklist item removed.".format(nick)
+            self.logger.info(u"Removed blacklist item {0} for {1}".format(
                 row_id, channel
             ))
         else:
-            message = "{0}, no blacklist item found with ID {1}".format(
+            message = u"{0}, no blacklist item found with ID {1}".format(
                 nick, row_id
             )
 
@@ -741,10 +745,10 @@ class Bot(object):
 
     def _remove_from_whitelist(self, channel, nick, args):
         if len(args) == 0:
-            self.logger.info("Got 0 length unwhitelist call from {0} in "
-                             "{1}?".format(nick, channel))
+            self.logger.info(u"Got 0 length unwhitelist call from {0} in "
+                             u"{1}?".format(nick, channel))
 
-            message = "{0}, ehh .. you gave me no ID?"
+            message = u"{0}, ehh .. you gave me no ID?"
             self._message(channel, message.format(nick))
             return
 
@@ -758,12 +762,12 @@ class Bot(object):
 
             self.blacklist_managers[channel].remove_whitelist(row_id)
 
-            message = "{0}, whitelist item removed.".format(nick)
-            self.logger.info("Removed whitelist item {0} for {1}".format(
+            message = u"{0}, whitelist item removed.".format(nick)
+            self.logger.info(u"Removed whitelist item {0} for {1}".format(
                 row_id, channel
             ))
         else:
-            message = "{0}, no whitelist item found with ID {1}".format(
+            message = u"{0}, no whitelist item found with ID {1}".format(
                 nick, row_id
             )
 
@@ -831,7 +835,7 @@ class Bot(object):
             for filename in lua_files:
                 with open(filename, 'r') as handle:
                     code = handle.read()
-                    self.logger.debug("Loading Lua for {0} from {1}".format(
+                    self.logger.debug(u"Loading Lua for {0} from {1}".format(
                         channel, filename
                     ))
                     cm.load_lua(code)

@@ -205,3 +205,14 @@ class CommandManagerTest(TestCase):
 
         cm.run_command("username", "user", "user_func", threaded=False)
         chat.message.assert_called_with(3)
+
+    def test_unicode(self):
+        chat = Chat(None, None)
+        chat.message = Mock()
+        cm = bot.commandmanager.CommandManager("#tmp", FakeBot(), chat=chat)
+
+        line = u"test ヽ༼ຈل͜ຈ༽ﾉ AMENO ヽ༼ຈل͜ຈ༽ﾉ"
+        cm.add_simple_command(line.split(" "))
+
+        cm.run_command("username", "mod", "test", threaded=False)
+        chat.message.assert_called_with(u"ヽ༼ຈل͜ຈ༽ﾉ AMENO ヽ༼ຈل͜ຈ༽ﾉ")

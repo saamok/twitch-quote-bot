@@ -89,14 +89,14 @@ class CommandManager(object):
     """
 
     # Template for creating new Lua functions
-    func_template = """
+    func_template = u"""
     function __chat__{func_name}({args})
         {func_body}
     end
     """
 
     # Function template for doing Lua function calls
-    call_template = """
+    call_template = u"""
     function(...)
         local chat = require("chat")
         local retval = __chat__{func_name}(unpack(arg))
@@ -198,7 +198,8 @@ class CommandManager(object):
         """
 
         if self.logger:
-            self.logger.debug("Loading command {0} with user level {1}".format(
+            self.logger.debug(u"Loading command {0} with user level "
+                              u"{1}".format(
                 command, user_level
             ))
 
@@ -228,8 +229,8 @@ class CommandManager(object):
         """
 
         if not self._can_run_command(user_level, command):
-            raise CommandPermissionError("User does not have permission to "
-                                         "run this command")
+            raise CommandPermissionError(u"User does not have permission to "
+                                         u"run this command")
 
         if args is None:
             args = []
@@ -344,7 +345,7 @@ class CommandManager(object):
         response_text = response_text.replace("\\", "\\\\")
         response_text = response_text.replace('"', '\\"')
 
-        func_body = """
+        func_body = u"""
         return SimpleCom("{response_text}", user, arg)
         """.format(response_text=response_text)
 
@@ -412,7 +413,7 @@ class CommandManager(object):
         ]
 
         if not name in levels:
-            raise ValueError("{0} is not a valid user level".format(name))
+            raise ValueError(u"{0} is not a valid user level".format(name))
 
         return levels.index(name)
 
@@ -454,7 +455,7 @@ class CommandManager(object):
             :return: None
             """
 
-            self.logger.debug("Lua: " + str(message))
+            self.logger.debug(u"Lua: " + str(message))
 
         def interval(seconds, function):
             i = Interval(seconds, function, self.lua)
@@ -475,7 +476,7 @@ class CommandManager(object):
             try:
                 response = text.format(*params, user=user)
             except IndexError:
-                response = user + ", invalid number of arguments."
+                response = user + u", invalid number of arguments."
 
             return response
 
