@@ -364,7 +364,9 @@ class Bot(object):
         if user_level in ("mod", "owner"):
             # Mods and owners can run any and all core commands
             return True
-        elif command in (u"addquote", u"delquote", u"quote"):
+        elif command == u"quote":
+            return True
+        elif command in (u"addquote", u"delquote"):
             if user_level == "reg":
                 return True
 
@@ -555,8 +557,8 @@ class Bot(object):
             day=int(timestamp.strftime("%d"))
         )
 
-        message = u"{0}, New quote added."
-        self._message(channel, message.format(nick))
+        message = u"{0}, New quote (id:{1}) added."
+        self._message(channel, message.format(nick,quote.id))
 
         self.logger.info(u"Added quote for {0}: {1}".format(channel, quote))
 
