@@ -423,11 +423,14 @@ class Bot(object):
 
         user_level = self._get_user_level(channel, nick)
         cm = self.command_managers[channel]
-
+        self.logger.debug(u"_handle_custom_command")
         message = None
 
         try:
-            cm.run_command(nick, user_level, command, args, timestamp)
+            message = cm.run_command(nick, user_level, command, args, timestamp)
+            self.logger.debug(u"Running command {0} for {1} with {2} ret {3}".format(
+                command,channel,args,message
+            ))
         except CommandPermissionError:
             message = u"{0}, you don't have permissions to run that " \
                       u"command".format(nick)
@@ -586,8 +589,8 @@ class Bot(object):
         quote = model.filter(id=quote_id).first()
 
         if quote:
+            message = u"{0}, Quote '{1}' removed.".format(nick,quote.quote)
             quote.delete_instance()
-            message = u"{0}, Quote removed.".format(nick)
             self.logger.info(
                 u"Removed quote {0} for {1}".format(quote_id, channel)
             )

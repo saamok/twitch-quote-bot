@@ -248,6 +248,10 @@ class CommandManager(object):
 
         self._set_last_executed_time(command, timestamp)
 
+        self.logger.debug(u"Commandmanager command {0} args {1}".format(
+            command, args
+        ))
+
         def run():
             code = self.call_template.format(func_name=command)
             lua_func = self.lua.eval(code)
@@ -262,7 +266,10 @@ class CommandManager(object):
             lua_thread.daemon = True
             lua_thread.start()
         else:
-            return run()
+            self.logger.debug(u"Hitting luaret run")
+            luaret = run()
+            self.logger.debug(u"luaret after")
+            return luaret
 
     def load_lua(self, code):
         """

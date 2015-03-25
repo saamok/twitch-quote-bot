@@ -17,7 +17,8 @@ local strawpoll = {}
 
 -- Basic configuration for Strawpoll API
 strawpoll.host = "strawpoll.me"
-strawpoll.url = "http://strawpoll.me/ajax/new-poll"
+-- strawpoll.url = "http://strawpoll.me/ajax/new-poll"
+strawpoll.url = "http://strawpoll.me/api/v2/polls"
 strawpoll.pollBaseUrl = "http://strawpoll.me/"
 strawpoll.contentType = "application/x-www-form-urlencoded; charset=UTF-8"
 
@@ -32,7 +33,7 @@ function _create_internal(title, multi, permissive, options)
     data.add("title", title)
 
     for i, option in pairs(options) do
-        data.add("options[]", tostring(option))
+        data.add("options", tostring(option))
     end
 
     data.add("multi", tostring(multi))
@@ -43,10 +44,10 @@ function _create_internal(title, multi, permissive, options)
     headers.add("Content-Type", strawpoll.contentType)
     headers.add("X-Requested-With", "XMLHttpRequest")
     headers.add("Accept", "*/*")
-
+    log(data)
     local response_json = http.post(strawpoll.url, data, headers)
     local response = json.decode(response_json)
-
+    log(response.id)
     return strawpoll.pollBaseUrl .. response.id
 end
 
@@ -61,8 +62,9 @@ function strawpoll.create(title, ...)
             options[k] = option
         end
     end
-
-    return _create_internal(title, false, false, options)
+    local ret = _create_internal(title, false, false, options)
+    log(ret)
+    return ret
 end
 
 return strawpoll
