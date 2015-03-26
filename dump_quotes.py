@@ -22,3 +22,6 @@ if __name__ == "__main__":
 
     for row in models["quotes"].select():
         print(row.quote)
+
+    for row in models["notes"].select():
+        print(u"{0} {1} {2}".format(row.gamename, row.starttime, row.notetime))

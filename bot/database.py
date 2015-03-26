@@ -7,7 +7,7 @@ import inspect
 import json
 import os
 from peewee import SqliteDatabase, Model, CharField, IntegerField, \
-    BooleanField, TextField
+    BooleanField, TextField, DateTimeField
 from peewee import fn
 
 
@@ -155,6 +155,17 @@ class Database(object):
                 database = db
                 db_table = "whitelist_{channel}".format(channel=channel)
 
+        class TimedNotes(Model):
+            gamename = TextField()
+            starttime = DateTimeField()
+            comment = TextField()
+            notetime = DateTimeField()
+            
+            class Meta:
+                database = db
+                db_table = "notes_{channel}".format(channel=channel)
+            
+
         class Quotes(Model):
             quote = TextField(unique=True)
             year = IntegerField()
@@ -202,7 +213,8 @@ class Database(object):
             "data": Data,
             "blacklist": Blacklist,
             "whitelist": Whitelist,
-            "quotes": Quotes
+            "quotes": Quotes,
+            "notes": TimedNotes
         }
 
         for key in model_map:

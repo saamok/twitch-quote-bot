@@ -3,6 +3,7 @@ The main bot logic module
 """
 
 from datetime import datetime
+import dateutil.parser
 from glob import glob
 import json
 from lupa import LuaError
@@ -11,7 +12,7 @@ from .commandmanager import CommandManager, CommandPermissionError, \
 from .database import Database
 from .utils import ThreadCallRelay, human_readable_time, ArgumentParser
 from .blacklist import BlacklistManager
-
+from twitch import TwitchTV, Keys, Urls, TwitchException
 
 class Bot(object):
     """A bot instance"""
@@ -48,6 +49,7 @@ class Bot(object):
         self.blacklist_managers = {}
         self.channel_models = {}
         self.db = None
+        self.twitchapi = None
 
     #
     # Public API
@@ -62,6 +64,7 @@ class Bot(object):
         self.logger.info(u"Starting bot...")
 
         self._initialize_models()
+        self._initialize_twitchapi()
 
         self._initialize_command_managers()
 
@@ -180,6 +183,8 @@ class Bot(object):
                 self._del_quote(channel, nick, args)
             elif command == u"quote":
                 self._show_quote(channel, nick, args)
+            elif command == u"addnote":
+                self._add_note(channel, nick, args)
             elif command == u"reg":
                 self._manage_regulars(channel, nick, args)
             elif command == u"def" or command == u"com":
@@ -325,7 +330,8 @@ class Bot(object):
             u"quote",
             u"reg",
             u"def",
-            u"com"
+            u"com",
+            u"addnote"
         ]
 
     def _get_user_level(self, channel, nick):
@@ -564,6 +570,69 @@ class Bot(object):
         self._message(channel, message.format(nick,quote.id))
 
         self.logger.info(u"Added quote for {0}: {1}".format(channel, quote))
+
+    def _add_note(self, channel, nick, args, timestamp=None):
+        """
+        Handler for the "addnote" command, adds a timestamped note
+        into the database
+        
+        :param channel: The channel the command was triggered on
+        :param nick: The nick that triggered it
+        :param args: The words on the line after the command
+        :return: None
+        """
+        
+        note_text = " ".join(args)
+        message = None
+        streaminfo = None
+        if len(note_text) == 0:
+            self.logger.info(u"Got 0 length addnote call from {0} in "
+                             u"{1}?".format(nick, channel))
+            message = u"{0}, you gave me no actual note text."
+            self._message(channel, message.format(nick))
+            return
+        
+        timestamp = datetime.utcnow()
+        
+        try:
+            streaminfo = self.twitchapi._fetchItems(Urls.STREAMS + channel.lstrip("#"), "stream")
+        except TwitchException as e:
+            self.logger.info(u"Caught TwitchException trying to fetch stream info")
+            if e.code != TwitchException.STREAM_OFFLINE:
+                message = u"Accessing Twitch API failed: url/http/json. Sorry, {0}"
+        except Exception as e:
+            self.logger.info(u"Caught unexpected exception {0} trying to fetch stream info.".format(e))
+            message = u"Accessing Twitch API failed. Sorry, {0}"
+            
+        if message is not None:
+            self._message(channel, message.format(nick))
+            return
+        
+        if streaminfo is not None:
+            try:
+                game = streaminfo["game"]
+                starttime = dateutil.parser.parse(streaminfo["created_at"])
+                starttime = starttime.replace(tzinfo=None)
+            except:
+                self.logger.info(u"Caught exception trying to parse game/starttime")
+                self._message(channel, u"Twitch API data parsing failed. Sorry, {0}".format(nick))
+                return
+        else:
+            game = "None"
+            starttime = timestamp
+        
+           
+        model = self._get_model(channel, "notes")
+        note = model.create(gamename=game, 
+            starttime=starttime, 
+            notetime=timestamp,
+            comment=note_text
+        )
+
+        elapsed = timestamp - starttime
+        
+        self.logger.info(u"Added note for {0}: {1}".format(channel,note))
+        self._message(channel, u"Note added: {0} after start of stream.".format(elapsed))
 
     def _del_quote(self, channel, nick, args):
         """
@@ -898,6 +967,15 @@ class Bot(object):
         self.db.run_migrations()
         for channel in self.settings.CHANNEL_LIST:
             self.channel_models[channel] = self.db.get_models(channel)
+
+    def _initialize_twitchapi(self):
+        """
+        Create the Twitch API wrapper object
+        
+        :return: None
+        """
+        
+        self.twitchapi = TwitchTV(self.logger)
 
     def _get_model(self, channel, table):
         """

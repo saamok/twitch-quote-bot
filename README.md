@@ -6,19 +6,9 @@ A bot mainly for Twitch channels, but can be used for other purposes as well.
 The bot supports writing custom commands using Lua, and saves it's states in
  an sqlite database.
 
-
-Current build status
-====================
-
-[![Build Status](https://travis-ci.org/lietu/twitch-quote-bot.svg?branch=master)](https://travis-ci.org/lietu/twitch-quote-bot)
-
-
-Using the bot
-=============
-The documentation for using the bot, creating commands, 
-etc. is in the GitHub [project wiki](https://github.com/lietu/twitch-quote-bot/wiki) at
-[https://github.com/lietu/twitch-quote-bot/wiki](https://github.com/lietu/twitch-quote-bot/wiki).
-
+The stuff below was written by [lietu](https://github.com/lietu/) 
+for his fork of the twitch-quote-bot.
+It still applies, I just take no credit for any of this.
 
 
 Requirements
